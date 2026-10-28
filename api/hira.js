@@ -4,11 +4,15 @@
 //    Vercel → Settings → Functions → Function Region 을 "Seoul (icn1)" 로 지정하세요.
 //
 // 호출 예) /api/hira?svc=basis&sidoCd=110000&dgsbjtCd=01&pageNo=1
-//         /api/hira?svc=top5&ykiho=...
+//         /api/hira?svc=top5&ykiho=...   (질병 Top5)
+//         /api/hira?svc=dtl&ykiho=...    (진료시간)
+//         /api/hira?svc=spc&ykiho=...    (과목별 전문의)
 //         /api/hira?svc=ping   → 실행 지역·사용 주소 확인 (진단용)
 // API 주소가 바뀌면 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
 //   BASIS_URL = 병원정보서비스 병원기본목록 요청주소
 //   TOP5_URL  = 병원진료정보조회서비스 의원진료상위질병5개 요청주소
+//   DTL_URL   = 의료기관별상세정보서비스 세부정보 요청주소
+//   SPC_URL   = 의료기관별상세정보서비스 전문과목별 전문의수 요청주소
 
 const SERVICES = {
   basis: {
@@ -20,6 +24,16 @@ const SERVICES = {
     url: process.env.TOP5_URL || "https://apis.data.go.kr/B551182/hospDiagInfoService1/getClinicTop5List1",
     params: ["ykiho"],
     ttl: 604800, // 상위질병: 일주일 캐시 (1년치 집계라 자주 안 바뀜)
+  },
+  dtl: {   // 의료기관별상세정보서비스 > 세부정보 (진료시간)
+    url: process.env.DTL_URL || "https://apis.data.go.kr/B551182/MadmDtlInfoService2.8/getDtlInfo2.8",
+    params: ["ykiho"],
+    ttl: 604800,
+  },
+  spc: {   // 의료기관별상세정보서비스 > 전문과목별 전문의 수
+    url: process.env.SPC_URL || "https://apis.data.go.kr/B551182/MadmDtlInfoService2.8/getSpcSbjtSdrInfo2.8",
+    params: ["ykiho"],
+    ttl: 604800,
   },
 };
 
@@ -69,11 +83,13 @@ export async function GET(req) {
       keySet: !!process.env.DATA_GO_KR_KEY,
       basis: SERVICES.basis.url,
       top5: SERVICES.top5.url,
+      dtl: SERVICES.dtl.url,
+      spc: SERVICES.spc.url,
     }, 200, headers);
   }
 
   const svc = SERVICES[q.get("svc")];
-  if (!svc) return json({ error: "svc는 basis, top5, ping 중 하나" }, 400, headers);
+  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, ping 중 하나" }, 400, headers);
 
   let key = process.env.DATA_GO_KR_KEY || "";
   if (!key) return json({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }, 500, headers);
