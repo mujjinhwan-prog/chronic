@@ -47,6 +47,21 @@ select:focus,input[type=text]:focus,input[type=number]:focus{outline:2px solid v
 input[type=range],input[type=checkbox]{accent-color:var(--acc)}
 tbody tr:nth-child(even){background:var(--soft)}
 tbody tr:hover{background:var(--acc-soft)}
+.multi{border:1px solid var(--line2);border-radius:8px;background:var(--card)}
+.multi .mh{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px}
+.multi .mh b{color:var(--acc);font-weight:700}
+.multi .mh button{background:none;border:0;color:var(--pri);font:inherit;font-size:12px;cursor:pointer;padding:0 2px}
+.multi .mh button:hover{color:var(--acc)}
+.multi .ml{max-height:190px;overflow:auto;padding:4px 6px;display:grid;grid-template-columns:1fr 1fr;gap:0 6px}
+.multi .ml label{display:flex;gap:5px;align-items:center;margin:0;padding:3px 2px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.multi .ml label span{color:var(--sub);font-size:11px;margin-left:auto}
+.multi .empty{grid-column:1/-1;color:var(--sub);font-size:12px;padding:6px 2px}
+.tele .grp{font-size:12px;font-weight:700;color:var(--pri);margin:10px 0 2px}
+.tele .grp.x{color:var(--sub)}
+.side .tele label{display:grid;grid-template-columns:auto 1fr;gap:2px 6px;align-items:start;margin:4px 0;color:var(--ink);font-size:12.5px;cursor:pointer}
+.side .tele label small{grid-column:2;color:var(--sub);font-size:11px;line-height:1.35}
+.side .opt{display:flex;gap:6px;align-items:center;font-size:12.5px;margin:6px 0;color:var(--ink);cursor:pointer}
+.chip.off{opacity:.45}
 .theme{position:fixed;right:16px;bottom:16px;z-index:1500;display:flex;background:var(--card);border:1px solid var(--line2);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
 .theme button{border:0;background:none;color:var(--sub);font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
 .theme button.on{background:var(--btn);color:var(--prit);font-weight:700}
@@ -144,11 +159,11 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <div class="sub" style="font-size:12px">현재 화면의 가중치가 오른쪽에 표시됩니다. 지표명을 누르면 펼쳐집니다.</div>
 
     <details id="h-w1">
-      <summary><span>① Top5 질병 중 만성질환 수 <span class="sub">— 가장 강한 신호</span></span><span class="wt" data-wt="1"></span></summary>
+      <summary><span>① Top5 중 비대면 적합 질환 수 <span class="sub">— 가장 강한 신호</span></span><span class="wt" data-wt="1"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 고혈압·당뇨병·이상지질혈증 같은 만성질환이 몇 개인지</dd>
+        <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 <b>비대면 재진에 적합한 질환</b>(고혈압·당뇨병·이상지질혈증 등)이 몇 개인지. 기준은 아래 '비대면 적합 질환 기준' 참고</dd>
         <dt>왜 재진인가</dt><dd>만성질환 환자는 보통 1~3개월마다 같은 의원에 와서 약을 이어 받습니다. 상위 질병에 만성질환이 많을수록 환자 구성 자체가 재진 위주입니다.</dd>
-        <dt>점수 계산</dt><dd>만성질환 개수 ÷ 5 × 가중치 (5개 모두 만성질환이면 만점)</dd>
+        <dt>점수 계산</dt><dd>적합 질환 개수 ÷ 5 × 가중치 (5개 모두 적합 질환이면 만점)</dd>
         <dt>데이터</dt><dd>심평원 병원진료정보조회서비스 (의원진료상위질병5개)</dd>
       </dl>
     </details>
@@ -192,6 +207,14 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <dt>데이터</dt><dd>심평원 병원정보서비스 (의사 총수)</dd>
       </dl>
     </details>
+
+    <h3 id="h-tele">비대면 적합 질환 기준</h3>
+    <ul>
+      <li><b>포함</b>: 증상이 안정적이고 같은 약을 반복 처방하는 <b>만성질환</b>. 개정안상 일반 비대면진료는 6개월 내 같은 증상으로 대면진료를 받은 의료기관에서 하는 것이 원칙이라, 정기 재진 환자가 핵심 대상입니다.</li>
+      <li><b>제외</b>: 개정안에서 비대면 처방이 금지된 <b>마약류·비만치료제</b>가 주로 쓰이는 질환(불면증, 비만, ADHD 등)과 향정신성 약 처방 비중이 높은 질환(불안·공황 등).</li>
+      <li><b>제외</b>: 감기·장염 같은 <b>급성 질환</b>은 비대면 진료 자체는 가능하지만, 초진 처방이 7일 이내로 제한되고 재진으로 이어지지 않아 타겟에서 뺐습니다.</li>
+      <li>복지부가 '오·남용 우려 의약품'을 고시로 추가 지정할 예정이므로, 확정되면 왼쪽 <b>비대면 적합 질환 설정</b>에서 체크를 바꾸면 바로 반영됩니다.</li>
+    </ul>
 
     <h3 id="h-grade">등급 기준</h3>
     <div class="gradebox">
@@ -239,7 +262,9 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <button class="btn pri full" id="btnBasis">의원 목록 불러오기</button>
 
       <div class="step">② 시군구·읍면동으로 좁히기</div>
-      <label>시군구</label><select id="fSggu"></select>
+      <label>시군구 (여러 곳 선택 가능)</label>
+      <div class="multi"><div class="mh"><span id="sgguSum">전체</span><span><button type="button" id="sgguAll">모두 선택</button> · <button type="button" id="sgguNone">해제</button></span></div>
+        <div class="ml" id="sgguList"><div class="empty">① 의원 목록을 먼저 불러오세요</div></div></div>
       <label>읍면동</label><select id="fEmd"></select>
 
       <div class="step">③ 질병정보(Top5) 조회</div>
@@ -253,11 +278,21 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <label>등급</label>
       <select id="fGrade"><option value="">전체</option><option>A</option><option>B</option><option>C</option><option value="N">미조회</option></select>
       <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
+      <label class="opt"><input type="checkbox" id="oHide" checked>비대면 적합 질환이 없는 의원 숨기기</label>
+      <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
+
+      <hr>
+      <details class="tele">
+        <summary>비대면 적합 질환 설정 <button class="q" data-help="tele" title="기준 설명">?</button></summary>
+        <div class="note">체크한 질환만 '비대면 적합 질환'으로 집계·표시합니다.</div>
+        <div id="teleList"></div>
+        <button class="btn full" id="teleReset" style="margin-top:8px">기본값으로</button>
+      </details>
 
       <hr>
       <details>
         <summary>잠재지수 가중치 <button class="q" data-help="top" title="지표 설명">?</button></summary>
-        <label>Top5 질병 중 만성질환 수<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="40"><span id="w1v"></span></div>
+        <label>Top5 중 비대면 적합 질환 수<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="40"><span id="w1v"></span></div>
         <label>고혈압·당뇨 양호기관<button class="q" data-help="w2" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w2" value="20"><span id="w2v"></span></div>
         <label>표시과목 (내과·가정의학과)<button class="q" data-help="w3" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w3" value="15"><span id="w3v"></span></div>
         <label>개원 연수<button class="q" data-help="w4" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w4" value="15"><span id="w4v"></span></div>
@@ -295,7 +330,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <div class="sec-title">의원 리스트 <span class="sub" id="cnt"></span> <button class="q" data-help="top" title="지수·등급 설명">?</button></div>
         <div class="tbl"><table id="tbl"><thead><tr>
           <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
-          <th data-k="subject">과목</th><th data-k="chronicN">만성질환</th><th data-k="top5">Top5 질병</th><th data-k="good">평가양호</th>
+          <th data-k="subject">과목</th><th data-k="chronicN">적합질환</th><th data-k="top5" id="thTop5">비대면 적합 질환</th><th data-k="good">평가양호</th>
           <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
         </tr></thead><tbody></tbody></table></div>
       </div>
@@ -312,8 +347,45 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 /* ───────── 기본 설정 ───────── */
 const SIDO = [["110000","서울"],["210000","부산"],["220000","인천"],["230000","대구"],["240000","광주"],["250000","대전"],["260000","울산"],["410000","세종"],["310000","경기"],["320000","강원"],["330000","충북"],["340000","충남"],["350000","전북"],["360000","전남"],["370000","경북"],["380000","경남"],["390000","제주"]];
 const SUBNAME = {"01":"내과","23":"가정의학과","00":"일반의"};
-const CHRONIC = ["고혈압","당뇨","이상지질","고지혈","갑상선","골다공증","관절","통풍","만성폐쇄성","천식","만성신","신부전","심부전","협심","부정맥","뇌졸중","뇌경색","치매","파킨슨","전립선","위식도역류","만성간","간염","우울","불면"];
-const isChronic = d => CHRONIC.some(k => d.includes(k));
+/* 비대면 적합 질환 (Top5 질병명에 키워드가 들어 있으면 해당) */
+const TELE = [
+  {id:"htn",  label:"고혈압",              keys:["고혈압"],                         on:true},
+  {id:"dm",   label:"당뇨병",              keys:["당뇨"],                           on:true},
+  {id:"lipid",label:"이상지질혈증",        keys:["이상지질","고지혈"],              on:true},
+  {id:"thy",  label:"갑상선 질환",         keys:["갑상선"],                         on:true},
+  {id:"osteo",label:"골다공증",            keys:["골다공증"],                       on:true},
+  {id:"gout", label:"통풍",                keys:["통풍"],                           on:true},
+  {id:"resp", label:"천식·만성폐쇄성폐질환",keys:["천식","만성폐쇄성"],             on:true},
+  {id:"gerd", label:"위식도역류질환",      keys:["위식도역류","역류성"],            on:true},
+  {id:"bph",  label:"전립선비대증",        keys:["전립선"],                         on:true},
+  {id:"liver",label:"만성간질환·간염",     keys:["만성간","간염"],                  on:true},
+  {id:"ckd",  label:"만성신장질환",        keys:["만성신","신부전"],                on:true},
+  {id:"heart",label:"심장질환(협심증·심부전·부정맥)", keys:["협심","심부전","부정맥"], on:true},
+  {id:"stroke",label:"뇌졸중 후 관리",     keys:["뇌졸중","뇌경색"],                on:true},
+  {id:"dem",  label:"치매·파킨슨병",       keys:["치매","파킨슨"],                  on:true, why:"장기요양수급자 등은 지역 제한 예외"},
+  {id:"arth", label:"관절염",              keys:["관절"],                           on:true},
+  {id:"rhin", label:"알레르기비염·아토피", keys:["비염","아토피"],                  on:false, why:"계절성·단기 처방이 많아 기본 제외"},
+  {id:"insom",label:"불면증",              keys:["불면"],                           on:false, why:"수면제 상당수가 향정신성의약품(마약류) → 비대면 처방 금지"},
+  {id:"anx",  label:"우울·불안·공황",      keys:["우울","불안","공황"],             on:false, why:"향정신성 항불안제 처방 비중이 높음"},
+  {id:"obes", label:"비만",                keys:["비만"],                           on:false, why:"비만치료제는 비대면 처방 금지"},
+  {id:"adhd", label:"ADHD",                keys:["ADHD","주의력결핍"],              on:false, why:"치료제가 마약류 → 비대면 처방 금지"},
+  {id:"acute",label:"감기·장염 등 급성질환",keys:["감기","장염","인두염","편도","위장염","방광염"], on:false, why:"초진 7일 처방, 재진으로 이어지지 않음"},
+];
+let TELE_ON = {};
+const teleKeys = () => TELE.filter(t => TELE_ON[t.id]).flatMap(t => t.keys);
+let KEYS = [];
+const isChronic = d => KEYS.some(k => d.includes(k));
+function loadTele(){
+  const saved = store.get("chronic_tele", null);
+  TELE.forEach(t => TELE_ON[t.id] = saved && t.id in saved ? !!saved[t.id] : t.on);
+  KEYS = teleKeys();
+}
+function renderTele(){
+  const on = TELE.filter(t => t.on), off = TELE.filter(t => !t.on);
+  const row = t => `<label><input type="checkbox" data-tele="${t.id}" ${TELE_ON[t.id]?"checked":""}><span>${t.label}</span>${t.why?`<small>${t.why}</small>`:""}</label>`;
+  $("teleList").innerHTML = `<div class="grp">기본 포함 (만성질환)</div>${on.map(row).join("")}<div class="grp x">기본 제외</div>${off.map(row).join("")}`;
+  $("teleList").querySelectorAll("input").forEach(cb => cb.onchange = () => { TELE_ON[cb.dataset.tele] = cb.checked; store.set("chronic_tele", TELE_ON); KEYS = teleKeys(); apply(); });
+}
 const $ = id => document.getElementById(id);
 const store = {
   get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
@@ -370,7 +442,7 @@ async function loadTop5(){
   if(!todo.length){ say("현재 목록은 모두 조회되어 있습니다."); return; }
   if(todo.length > 1500 && !confirm(`${todo.length.toLocaleString()}곳을 조회합니다. 하루 호출 한도(개발계정 10,000건)를 고려해 시군구로 좁히는 걸 권장합니다. 계속할까요?`)) return;
   stopFlag = false; $("btnTop5").disabled = true; $("btnStop").style.display = "block";
-  let done = 0, fail = 0, idx = 0, limitHit = false;
+  let done = 0, fail = 0, idx = 0, limitHit = false, lastErr = "";
   const worker = async () => {
     while(idx < todo.length && !stopFlag){
       const r = todo[idx++];
@@ -380,7 +452,8 @@ async function loadTop5(){
         const d = [1,2,3,4,5].map(n=>it["mfrnIntrsIlnsNm"+n]).filter(Boolean);
         T5[r.ykiho] = { d, s: it.shwSbjtNm || "" };
         r.top5 = d.join("|"); r.looked = true; if(it.shwSbjtNm) r.subject = it.shwSbjtNm;
-      }catch(e){ fail++; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; } }
+      }catch(e){ fail++; lastErr = e.message; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; }
+        if(fail >= 8 && done < 12){ stopFlag = true; } }
       done++; setProg(done/todo.length*100);
       if(done % 10 === 0){ say(`질병정보 조회 ${done}/${todo.length}${fail?` (실패 ${fail})`:""}`); store.set("chronic_t5", T5); apply(true); }
     }
@@ -389,7 +462,8 @@ async function loadTop5(){
   store.set("chronic_t5", T5);
   $("btnTop5").disabled = false; $("btnStop").style.display = "none";
   if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${done-fail}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
-  else say(`조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 (다시 누르면 실패분만 재시도)`:""}`, !!fail);
+  else if(fail && done - fail === 0) say(`질병정보 조회가 모두 실패했습니다. 원인: ${lastErr} — data.go.kr에서 '병원진료정보조회서비스' 활용신청이 승인됐는지 확인하세요.`, true);
+  else say(`조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 (다시 누르면 실패분만 재시도) · 마지막 오류: ${lastErr}`:""}`, !!fail);
   apply();
 }
 
@@ -423,16 +497,35 @@ function score(rows){
 /* ───────── 필터·정렬 ───────── */
 const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ko"));
 function opts(el, vals){ const cur = el.value; el.innerHTML = `<option value="">전체</option>` + vals.map(v=>`<option>${v}</option>`).join(""); if(vals.includes(cur)) el.value = cur; }
+let SEL = new Set();   // 선택된 시군구 (비어 있으면 전체)
+function renderSggu(){
+  const cnt = {}; RAW.forEach(r => { if(r.sggu) cnt[r.sggu] = (cnt[r.sggu]||0) + 1; });
+  const list = uniq(Object.keys(cnt));
+  [...SEL].forEach(s => { if(!cnt[s]) SEL.delete(s); });
+  $("sgguList").innerHTML = list.length ? list.map(s => `<label><input type="checkbox" value="${esc(s)}" ${SEL.has(s)?"checked":""}>${esc(s)}<span>${cnt[s]}</span></label>`).join("")
+    : `<div class="empty">① 의원 목록을 먼저 불러오세요</div>`;
+  $("sgguList").querySelectorAll("input").forEach(cb => cb.onchange = () => { cb.checked ? SEL.add(cb.value) : SEL.delete(cb.value); $("fEmd").value=""; sgguChanged(); });
+  sgguSummary();
+}
+function sgguSummary(){
+  const n = SEL.size;
+  $("sgguSum").innerHTML = !n ? "전체" : n === 1 ? `<b>${esc([...SEL][0])}</b>` : `<b>${n}곳</b> 선택`;
+}
+function sgguChanged(){ sgguSummary(); refreshEmd(); apply(); }
+function refreshEmd(){
+  const el = $("fEmd");
+  if(SEL.size === 1){ el.disabled = false; opts(el, uniq(RAW.filter(r => SEL.has(r.sggu)).map(r => r.emd))); }
+  else { el.disabled = true; el.innerHTML = `<option value="">${SEL.size ? "시군구 1곳 선택 시 사용" : "전체"}</option>`; }
+}
 function refreshOpts(){
-  opts($("fSggu"), uniq(RAW.map(r=>r.sggu)));
-  opts($("fEmd"), uniq(RAW.filter(r=>!$("fSggu").value||r.sggu===$("fSggu").value).map(r=>r.emd)));
+  renderSggu(); refreshEmd();
   opts($("fSub"), uniq(RAW.map(r=>r.subject)));
 }
-function resetFilters(){ ["fSggu","fEmd","fSub","fGrade"].forEach(id=>$(id).value=""); $("fQ").value=""; }
+function resetFilters(){ SEL.clear(); ["fEmd","fSub","fGrade"].forEach(id=>$(id).value=""); $("fQ").value=""; }
 function apply(light){
   score(RAW);
-  const f = {sggu:$("fSggu").value,emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
-  VIEW = RAW.filter(r=>(!f.sggu||r.sggu===f.sggu)&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q)));
+  const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
+  VIEW = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.chronicN>0));
   VIEW.sort((a,b)=>{ if(sortK==="score"&&a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
   render(light);
@@ -452,13 +545,13 @@ function render(light){
   $("bars").innerHTML = ent.slice(0,15).map(([k,v])=>`<div class="b" data-s="${esc(k)}"><span>${esc(k)}</span><div class="t">
     <i style="width:${v.A/mx*100}%;background:var(--a)"></i><i style="width:${v.B/mx*100}%;background:var(--b)"></i><i style="width:${v.C/mx*100}%;background:var(--c)"></i><i style="width:${v.N/mx*100}%;background:var(--line)"></i></div>
     <span class="sub">${v.n}곳 · A ${v.A}</span></div>`).join("") || `<div class="sub">데이터 없음</div>`;
-  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ $("fSggu").value=el.dataset.s; $("fEmd").value=""; refreshOpts(); apply(); });
+  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ SEL = new Set([el.dataset.s]); $("fEmd").value=""; renderSggu(); sgguChanged(); });
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
   $("btnTop5").textContent = `현재 목록 질병정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
     <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
     <td>${esc(r.subject)}</td><td class="n">${r.chronicN}</td>
-    <td>${r.looked ? ((r.top5||"").split("|").filter(Boolean).map(d=>`<span class="chip ${isChronic(d)?"hit":""}">${esc(d)}</span>`).join("")||'<span class="sub">자료 없음</span>') : '<span class="sub">미조회</span>'}</td>
+    <td>${r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d=>!$("oOnly").checked||isChronic(d)).map(d=>`<span class="chip ${isChronic(d)?"hit":"off"}">${esc(d)}</span>`).join(""))||`<span class="sub">${(r.top5||"")?"적합 질환 없음":"자료 없음"}</span>`) : '<span class="sub">미조회</span>'}</td>
     <td>${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
   if(!light) drawMap();
 }
@@ -510,7 +603,12 @@ function showW(){ const w=W(); [1,2,3,4,5].forEach(i=>$("w"+i+"v").textContent=M
 ["w1","w2","w3","w4","w5"].forEach(id=>$(id).onchange=()=>apply());
 [$("tA"),$("tB"),$("fGrade"),$("fSub"),$("fEmd")].forEach(el=>el.onchange=()=>apply());
 $("fQ").oninput = () => apply(true);
-$("fSggu").onchange = () => { $("fEmd").value=""; refreshOpts(); apply(); };
+$("oHide").onchange = () => apply();
+$("oOnly").onchange = () => { $("thTop5").textContent = $("oOnly").checked ? "비대면 적합 질환" : "Top5 질병"; apply(true); };
+$("teleReset").onclick = () => { TELE.forEach(t => TELE_ON[t.id] = t.on); store.set("chronic_tele", TELE_ON); KEYS = teleKeys(); renderTele(); apply(); };
+loadTele(); renderTele();
+$("sgguAll").onclick = () => { RAW.forEach(r => r.sggu && SEL.add(r.sggu)); renderSggu(); sgguChanged(); };
+$("sgguNone").onclick = () => { SEL.clear(); renderSggu(); sgguChanged(); };
 document.querySelectorAll("#tbl th").forEach(th=>th.onclick=()=>{ const k=th.dataset.k; sortDir = sortK===k ? -sortDir : -1; sortK=k; apply(true); });
 /* ───────── 지표 설명 ───────── */
 function openHelp(sec){
