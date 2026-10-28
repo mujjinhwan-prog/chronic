@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>만성질환 재진 타겟맵</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1b1f24;--sub:#5b6573;--line:#e3e7ec;--pri:#0b5cad;--a:#0b7a52;--b:#c98a07;--c:#9aa3ad;--err:#c0392b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1a1f25;--ink:#e8ecf1;--sub:#9aa5b1;--line:#2a313a;--pri:#5aa2ef;--a:#3fc28e;--b:#e8b43a;--c:#6b7480;--err:#ff7b6b}}
+:root[data-theme="dark"]{--bg:#111418;--card:#1a1f25;--ink:#e8ecf1;--sub:#9aa5b1;--line:#2a313a;--pri:#5aa2ef;--a:#3fc28e;--b:#e8b43a;--c:#6b7480;--err:#ff7b6b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+header{padding:18px 16px 8px;max-width:1280px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--sub);font-size:13px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.row{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(4,1fr);margin:12px 0}
+.kpi .v{font-size:24px;font-weight:700}
+.kpi .l{color:var(--sub);font-size:12px}
+.main{grid-template-columns:310px 1fr}
+.side label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
+select,input[type=text],input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+.chk{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.chk label{display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)}
+.w{display:grid;grid-template-columns:1fr 44px;align-items:center;gap:6px}
+.w span{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+.btn{display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
+.btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.full{width:100%;margin-top:8px}
+.step{font-weight:700;margin:14px 0 2px;font-size:13px}
+.step:first-child{margin-top:0}
+.prog{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:var(--pri);transition:width .2s}
+.msg{font-size:12px;color:var(--sub);margin-top:6px;min-height:18px}
+.msg.err{color:var(--err)}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+#map{height:360px;border-radius:10px}
+.bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
+.bars .t{height:14px;background:var(--line);border-radius:4px;overflow:hidden;display:flex}
+.bars .t i{display:block;height:100%}
+.tbl{overflow:auto;max-height:520px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);cursor:pointer;color:var(--sub);font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.g{display:inline-block;min-width:22px;text-align:center;border-radius:6px;padding:1px 6px;color:#fff;font-weight:700;font-size:11px}
+.gA{background:var(--a)}.gB{background:var(--b)}.gC{background:var(--c)}.gN{background:var(--line);color:var(--sub)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 6px;margin-right:3px;font-size:11px}
+.chip.hit{border-color:var(--a);color:var(--a)}
+.note{font-size:12px;color:var(--sub);margin-top:8px}
+.badge{display:inline-block;background:var(--c);color:#fff;border-radius:6px;padding:1px 8px;font-size:12px;margin-left:6px;vertical-align:middle}
+.sec-title{font-weight:700;margin:0 0 8px}
+details summary{cursor:pointer;font-weight:700;font-size:13px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.q{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--sub);color:var(--sub);font-size:10px;font-weight:700;cursor:pointer;margin-left:4px;vertical-align:1px;background:none;padding:0;line-height:1}
+.q:hover{border-color:var(--pri);color:var(--pri)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:24px 12px;z-index:2000;overflow:auto}
+.modal.on{display:flex}
+.mbox{background:var(--card);color:var(--ink);border-radius:14px;max-width:760px;width:100%;padding:20px 20px 8px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mhead h2{font-size:18px;margin:0}
+.x{background:none;border:0;font-size:22px;cursor:pointer;color:var(--sub);line-height:1}
+.lead{background:var(--bg);border-radius:10px;padding:12px 14px;margin:10px 0 14px;font-size:13.5px}
+.help details{border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:10px 12px}
+.help details[open]{border-color:var(--pri)}
+.help details summary{display:flex;justify-content:space-between;gap:8px;list-style:none}
+.help details summary::-webkit-details-marker{display:none}
+.help .wt{font-weight:600;color:var(--pri);font-size:12px;white-space:nowrap}
+.help dl{display:grid;grid-template-columns:86px 1fr;gap:6px 10px;margin:10px 0 2px;font-size:13px}
+.help dt{color:var(--sub);font-weight:600}
+.help dd{margin:0}
+.help ul{margin:6px 0 4px;padding-left:18px;font-size:13px}
+.help h3{font-size:14px;margin:18px 0 6px}
+.gradebox{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;margin:6px 0}
+.gradebox div{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+@media (max-width:600px){.help dl{grid-template-columns:1fr}.help dt{margin-top:6px}}
+@media (max-width:900px){.main{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr!important}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div>
+    <h1>만성질환 재진 타겟맵 <span id="srcBadge" class="badge">데이터 없음</span></h1>
+    <div class="sub">심평원 Open API 실시간 연동 · 비대면 재진 수요가 클 의원을 지역별로 우선순위화</div>
+  </div>
+  <button class="btn" data-help="top">📘 지표 설명 보기</button>
+</header>
+
+<div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="mbox help">
+    <div class="mhead"><h2 id="helpTitle">재진 많은 의원은 어떻게 판단하나요?</h2><button class="x" id="helpClose" aria-label="닫기">×</button></div>
+
+    <div class="lead" id="h-top">
+      공개 데이터에는 의원별 <b>재진 비율</b>이 없습니다. 그래서 이 대시보드는
+      <b>"재진이 많을 수밖에 없는 조건"</b>을 얼마나 갖췄는지로 점수를 매깁니다.<br>
+      한 줄 요약: <b>만성질환 위주 진료 + 꾸준한 관리 이력 + 오래된 동네 내과</b> = 재진 많은 의원
+    </div>
+
+    <h3>잠재지수를 이루는 5가지 지표</h3>
+    <div class="sub" style="font-size:12px">현재 화면의 가중치가 오른쪽에 표시됩니다. 지표명을 누르면 펼쳐집니다.</div>
+
+    <details id="h-w1">
+      <summary><span>① Top5 질병 중 만성질환 수 <span class="sub">— 가장 강한 신호</span></span><span class="wt" data-wt="1"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 고혈압·당뇨병·이상지질혈증 같은 만성질환이 몇 개인지</dd>
+        <dt>왜 재진인가</dt><dd>만성질환 환자는 보통 1~3개월마다 같은 의원에 와서 약을 이어 받습니다. 상위 질병에 만성질환이 많을수록 환자 구성 자체가 재진 위주입니다.</dd>
+        <dt>점수 계산</dt><dd>만성질환 개수 ÷ 5 × 가중치 (5개 모두 만성질환이면 만점)</dd>
+        <dt>데이터</dt><dd>심평원 병원진료정보조회서비스 (의원진료상위질병5개)</dd>
+      </dl>
+    </details>
+
+    <details id="h-w2">
+      <summary><span>② 고혈압·당뇨 양호기관</span><span class="wt" data-wt="2"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>심평원 고혈압·당뇨병 적정성평가에서 '양호' 판정을 받았는지</dd>
+        <dt>왜 재진인가</dt><dd>이 평가의 핵심 지표가 <b>방문 지속</b>과 <b>처방 지속</b> 환자 비율입니다. 양호 판정은 환자를 꾸준히 다시 오게 하고 있다는 공식 확인에 가깝습니다.</dd>
+        <dt>점수 계산</dt><dd>두 질환 모두 양호 = 만점, 하나만 양호 = 60%, 없음 = 0</dd>
+        <dt>데이터</dt><dd>심평원 누리집 공개 양호기관 목록 (왼쪽 메뉴 '양호기관 목록 병합'으로 반영)</dd>
+      </dl>
+    </details>
+
+    <details id="h-w3">
+      <summary><span>③ 표시과목 (내과·가정의학과)</span><span class="wt" data-wt="3"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원이 내건 진료과목</dd>
+        <dt>왜 재진인가</dt><dd>내과·가정의학과는 만성질환을 지속 관리하는 대표 과목입니다. 이비인후과·정형외과 등은 단기 내원이 많습니다.</dd>
+        <dt>점수 계산</dt><dd>내과·가정의학과 = 만점, 일반의 = 70%, 그 외 = 20%</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스, 병원진료정보조회서비스</dd>
+      </dl>
+    </details>
+
+    <details id="h-w4">
+      <summary><span>④ 개원 연수</span><span class="wt" data-wt="4"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>개설일로부터 지난 기간</dd>
+        <dt>왜 재진인가</dt><dd>오래된 의원일수록 수년째 다니는 단골 환자군이 쌓여 있습니다.</dd>
+        <dt>점수 계산</dt><dd>10년 이상 = 만점, 그 미만은 비례 (예: 5년 = 50%)</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스 (개설일자)</dd>
+      </dl>
+    </details>
+
+    <details id="h-w5">
+      <summary><span>⑤ 의사 수</span><span class="wt" data-wt="5"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원에 근무하는 의사 수</dd>
+        <dt>왜 재진인가</dt><dd>진료 용량이 클수록 재진 환자를 많이 소화할 수 있습니다.</dd>
+        <dt>점수 계산</dt><dd>3명 이상 = 만점, 그 미만은 비례 (예: 1명 = 33%)</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스 (의사 총수)</dd>
+      </dl>
+    </details>
+
+    <h3 id="h-grade">등급 기준</h3>
+    <div class="gradebox">
+      <div><span class="g gA">A</span> <span id="hgA">70</span>점 이상 · 우선 방문</div>
+      <div><span class="g gB">B</span> <span id="hgB">50</span>점 이상 · 관리 대상</div>
+      <div><span class="g gC">C</span> 그 미만</div>
+      <div><span class="g gN">-</span> 질병정보 미조회</div>
+    </div>
+    <div class="sub" style="font-size:12px">가중치와 기준점은 왼쪽 '잠재지수 가중치'에서 바꿀 수 있고, 합계는 자동으로 100점 만점이 됩니다.</div>
+
+    <h3 id="h-limit">한계 — 꼭 알아두세요</h3>
+    <ul>
+      <li>상위 5개 질병은 <b>순위가 아니라 가나다순</b>으로 제공돼, 고혈압이 1위인지 5위인지는 알 수 없습니다.</li>
+      <li>같은 고혈압 의원이라도 <b>환자 수 규모</b>는 공개되지 않습니다.</li>
+      <li>따라서 이 점수는 "재진이 많을 <b>가능성</b>"을 매긴 <b>추정치</b>이며, 실제 순위와 차이가 있을 수 있습니다.</li>
+    </ul>
+
+    <h3 id="h-improve">정확도를 높이는 방법</h3>
+    <ul>
+      <li><b>MR 현장 확인</b>: A등급 의원 방문 시 만성질환 환자 비중, 비대면 진료 운영 여부를 CRM에 기록 → 몇 달 뒤 점수와 비교해 가중치 조정</li>
+      <li><b>사내 처방 데이터 결합</b>: 의원별 만성질환 약 처방 건수가 있다면 가장 직접적인 재진 지표</li>
+      <li><b>양호기관 목록 반영</b>: 심평원 공개 목록을 병합하면 ② 지표가 채워집니다</li>
+    </ul>
+    <div style="text-align:right;margin:14px 0 10px"><button class="btn pri" id="helpOk">확인</button></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="row kpis">
+    <div class="card kpi"><div class="v" id="kN">-</div><div class="l">대상 의원 (질병정보 조회 완료)</div></div>
+    <div class="card kpi"><div class="v" id="kA">-</div><div class="l">A등급 (우선 방문)</div></div>
+    <div class="card kpi"><div class="v" id="kAvg">-</div><div class="l">평균 잠재지수 (조회 완료 기준)</div></div>
+    <div class="card kpi"><div class="v" id="kTop">-</div><div class="l">A등급 최다 시군구</div></div>
+  </div>
+
+  <div class="row main">
+    <aside class="card side">
+      <div class="step">① 지역·과목 선택 후 의원 목록 불러오기</div>
+      <label>시도</label><select id="aSido"></select>
+      <label>진료과목</label>
+      <div class="chk">
+        <label><input type="checkbox" value="01" checked>내과</label>
+        <label><input type="checkbox" value="23" checked>가정의학과</label>
+        <label><input type="checkbox" value="00" checked>일반의</label>
+      </div>
+      <button class="btn pri full" id="btnBasis">의원 목록 불러오기</button>
+
+      <div class="step">② 시군구·읍면동으로 좁히기</div>
+      <label>시군구</label><select id="fSggu"></select>
+      <label>읍면동</label><select id="fEmd"></select>
+
+      <div class="step">③ 질병정보(Top5) 조회</div>
+      <button class="btn pri full" id="btnTop5" disabled>현재 목록 질병정보 조회</button>
+      <button class="btn full" id="btnStop" style="display:none">중지</button>
+      <div class="prog"><i id="prog"></i></div>
+      <div class="msg" id="msg">시도를 고르고 ①부터 진행하세요.</div>
+
+      <hr>
+      <label>표시과목</label><select id="fSub"></select>
+      <label>등급</label>
+      <select id="fGrade"><option value="">전체</option><option>A</option><option>B</option><option>C</option><option value="N">미조회</option></select>
+      <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
+
+      <hr>
+      <details>
+        <summary>잠재지수 가중치 <button class="q" data-help="top" title="지표 설명">?</button></summary>
+        <label>Top5 질병 중 만성질환 수<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="40"><span id="w1v"></span></div>
+        <label>고혈압·당뇨 양호기관<button class="q" data-help="w2" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w2" value="20"><span id="w2v"></span></div>
+        <label>표시과목 (내과·가정의학과)<button class="q" data-help="w3" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w3" value="15"><span id="w3v"></span></div>
+        <label>개원 연수<button class="q" data-help="w4" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w4" value="15"><span id="w4v"></span></div>
+        <label>의사 수<button class="q" data-help="w5" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w5" value="10"><span id="w5v"></span></div>
+        <label>A등급 / B등급 기준점<button class="q" data-help="grade" title="설명 보기">?</button></label>
+        <div class="w" style="grid-template-columns:1fr 1fr"><input type="number" id="tA" value="70"><input type="number" id="tB" value="50"></div>
+        <div class="note">가중치는 합계 100으로 자동 환산됩니다.</div>
+      </details>
+      <hr>
+      <details>
+        <summary>고혈압·당뇨 양호기관 목록 병합 (선택)</summary>
+        <div class="note">열 이름: 요양기관명, 시군구, 고혈압, 당뇨병 (값: Y 또는 양호)</div>
+        <input type="file" id="goodFile" accept=".csv" style="margin-top:6px">
+        <div class="msg" id="goodMsg"></div>
+      </details>
+      <hr>
+      <details>
+        <summary>설정</summary>
+        <label>중계 API 주소</label><input type="text" id="apiBase" placeholder="/api/hira">
+        <div class="note">이 페이지와 같은 Vercel 프로젝트면 비워두세요.</div>
+        <button class="btn full" id="btnCache">질병정보 캐시 비우기</button>
+        <button class="btn full" id="btnSample">샘플 데이터로 미리보기</button>
+      </details>
+      <div style="margin-top:12px"><button class="btn pri full" id="export">현재 목록 CSV 내보내기</button></div>
+      <div class="note">개별 의원의 실제 재진율은 공개되지 않아, 공개 지표로 만든 <b>추정 지수</b>입니다. <a href="#" data-help="limit">한계 보기</a></div>
+    </aside>
+
+    <section class="row" style="align-content:start">
+      <div class="row two" style="grid-template-columns:1fr 1fr">
+        <div class="card"><div class="sec-title">지도</div><div id="map"></div></div>
+        <div class="card"><div class="sec-title">시군구별 의원 수 (등급 구성)</div><div class="bars" id="bars"></div>
+          <div class="note"><span class="g gA">A</span> <span class="g gB">B</span> <span class="g gC">C</span> <span class="g gN">미조회</span> · 막대를 누르면 해당 시군구로 필터</div></div>
+      </div>
+      <div class="card">
+        <div class="sec-title">의원 리스트 <span class="sub" id="cnt"></span> <button class="q" data-help="top" title="지수·등급 설명">?</button></div>
+        <div class="tbl"><table id="tbl"><thead><tr>
+          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
+          <th data-k="subject">과목</th><th data-k="chronicN">만성질환</th><th data-k="top5">Top5 질병</th><th data-k="good">평가양호</th>
+          <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
+        </tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ───────── 기본 설정 ───────── */
+const SIDO = [["110000","서울"],["210000","부산"],["220000","인천"],["230000","대구"],["240000","광주"],["250000","대전"],["260000","울산"],["410000","세종"],["310000","경기"],["320000","강원"],["330000","충북"],["340000","충남"],["350000","전북"],["360000","전남"],["370000","경북"],["380000","경남"],["390000","제주"]];
+const SUBNAME = {"01":"내과","23":"가정의학과","00":"일반의"};
+const CHRONIC = ["고혈압","당뇨","이상지질","고지혈","갑상선","골다공증","관절","통풍","만성폐쇄성","천식","만성신","신부전","심부전","협심","부정맥","뇌졸중","뇌경색","치매","파킨슨","전립선","위식도역류","만성간","간염","우울","불면"];
+const isChronic = d => CHRONIC.some(k => d.includes(k));
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let RAW = [], VIEW = [], sortK = "score", sortDir = -1, map, layer, stopFlag = false, GOOD = {};
+let T5 = store.get("chronic_t5", {});   // ykiho → {d:[질병], s:표시과목}
+
+/* ───────── API ───────── */
+const apiBase = () => ($("apiBase").value.trim() || "/api/hira");
+async function api(params){
+  const r = await fetch(apiBase() + "?" + new URLSearchParams(params));
+  let j; try{ j = await r.json(); }catch(e){ throw new Error(`중계 API 응답 오류 (HTTP ${r.status})`); }
+  if(!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+  return j;
+}
+const yrs = d => { if(!d||d.length<8) return ""; const t = new Date(+d.slice(0,4), +d.slice(4,6)-1, +d.slice(6,8)); return +((Date.now()-t)/31557600000).toFixed(1); };
+
+async function loadBasis(){
+  const sido = $("aSido").value, subs = [...document.querySelectorAll(".chk input:checked")].map(x=>x.value);
+  if(!subs.length){ say("진료과목을 하나 이상 고르세요.", true); return; }
+  $("btnBasis").disabled = true; setProg(0);
+  const seen = new Map();
+  try{
+    for(const [si,sub] of subs.entries()){
+      let page = 1, total = 1, got = 0;
+      while(got < total){
+        say(`${SUBNAME[sub]} 목록 ${page}페이지 불러오는 중…`);
+        const j = await api({svc:"basis", sidoCd:sido, clCd:"31", dgsbjtCd:sub, numOfRows:500, pageNo:page});
+        total = j.totalCount; got += j.items.length;
+        j.items.forEach(it => { if(it.ykiho && !seen.has(it.ykiho)) seen.set(it.ykiho, toRow(it, sub)); });
+        setProg(((si + Math.min(got/Math.max(total,1),1)) / subs.length) * 100);
+        if(!j.items.length) break;
+        page++;
+      }
+    }
+    RAW = [...seen.values()];
+    applyT5(); mergeGood();
+    $("srcBadge").textContent = `실데이터 · ${SIDO.find(s=>s[0]===sido)[1]}`; $("srcBadge").style.background = "var(--a)";
+    say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. 시군구를 고른 뒤 ③ 질병정보를 조회하세요.`);
+    resetFilters(); refreshOpts(); apply();
+  }catch(e){ say("불러오기 실패: " + e.message, true); }
+  $("btnBasis").disabled = false; $("btnTop5").disabled = !RAW.length;
+}
+function toRow(it, sub){
+  return { ykiho:it.ykiho, name:it.yadmNm||"", sido:it.sidoCdNm||"", sggu:it.sgguCdNm||"", emd:it.emdongNm||"", addr:it.addr||"", tel:it.telno||"",
+    subject:SUBNAME[sub]||"", doctors:+(it.drTotCnt||0), years:yrs(it.estbDd), lat:+(it.YPos||it.yPos||0), lng:+(it.XPos||it.xPos||0),
+    top5:"", looked:false, hp_good:"", dm_good:"" };
+}
+function applyT5(){ RAW.forEach(r=>{ const c = T5[r.ykiho]; if(c){ r.top5 = c.d.join("|"); r.looked = true; if(c.s) r.subject = c.s; } }); }
+
+async function loadTop5(){
+  const todo = VIEW.filter(r => !r.looked);
+  if(!todo.length){ say("현재 목록은 모두 조회되어 있습니다."); return; }
+  if(todo.length > 1500 && !confirm(`${todo.length.toLocaleString()}곳을 조회합니다. 하루 호출 한도(개발계정 10,000건)를 고려해 시군구로 좁히는 걸 권장합니다. 계속할까요?`)) return;
+  stopFlag = false; $("btnTop5").disabled = true; $("btnStop").style.display = "block";
+  let done = 0, fail = 0, idx = 0, limitHit = false;
+  const worker = async () => {
+    while(idx < todo.length && !stopFlag){
+      const r = todo[idx++];
+      try{
+        const j = await api({svc:"top5", ykiho:r.ykiho});
+        const it = j.items[0] || {};
+        const d = [1,2,3,4,5].map(n=>it["mfrnIntrsIlnsNm"+n]).filter(Boolean);
+        T5[r.ykiho] = { d, s: it.shwSbjtNm || "" };
+        r.top5 = d.join("|"); r.looked = true; if(it.shwSbjtNm) r.subject = it.shwSbjtNm;
+      }catch(e){ fail++; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; } }
+      done++; setProg(done/todo.length*100);
+      if(done % 10 === 0){ say(`질병정보 조회 ${done}/${todo.length}${fail?` (실패 ${fail})`:""}`); store.set("chronic_t5", T5); apply(true); }
+    }
+  };
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  store.set("chronic_t5", T5);
+  $("btnTop5").disabled = false; $("btnStop").style.display = "none";
+  if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${done-fail}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
+  else say(`조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 (다시 누르면 실패분만 재시도)`:""}`, !!fail);
+  apply();
+}
+
+/* ───────── 양호기관 병합 ───────── */
+function mergeGood(){ RAW.forEach(r=>{ const g = GOOD[r.name+"|"+r.sggu]; r.hp_good = g&&g[0]?"Y":""; r.dm_good = g&&g[1]?"Y":""; }); }
+$("goodFile").onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  Papa.parse(f,{header:true,skipEmptyLines:true,complete:res=>{
+    const yes = v => ["Y","양호","1","O"].includes(String(v||"").trim());
+    GOOD = {}; res.data.forEach(x => GOOD[(x["요양기관명"]||"").trim()+"|"+(x["시군구"]||"").trim()] = [yes(x["고혈압"]), yes(x["당뇨병"])]);
+    mergeGood(); apply();
+    $("goodMsg").textContent = `${Object.keys(GOOD).length}개 기관 병합, 현재 목록 중 ${RAW.filter(r=>r.hp_good||r.dm_good).length}곳 매칭`;
+  }});
+};
+
+/* ───────── 점수 ───────── */
+function W(){ const w=[1,2,3,4,5].map(i=>+$("w"+i).value); const t=w.reduce((a,b)=>a+b,0)||1; return w.map(x=>x/t*100); }
+function score(rows){
+  const [w1,w2,w3,w4,w5] = W(), tA=+$("tA").value, tB=+$("tB").value;
+  rows.forEach(r=>{
+    const t5 = (r.top5||"").split("|").filter(Boolean);
+    r.chronicN = r.looked ? t5.filter(isChronic).length : "";
+    const good = (r.hp_good==="Y"?1:0)+(r.dm_good==="Y"?1:0); r.good = good;
+    const subS = /내과|가정의학/.test(r.subject) ? 1 : /일반의/.test(r.subject) ? .7 : .2;
+    const y = Math.min((+r.years||0)/10,1), d = Math.min((+r.doctors||0)/3,1);
+    r.score = Math.round(w1*((+r.chronicN||0)/5) + w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d);
+    r.grade = !r.looked ? "N" : r.score>=tA ? "A" : r.score>=tB ? "B" : "C";
+  });
+}
+
+/* ───────── 필터·정렬 ───────── */
+const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ko"));
+function opts(el, vals){ const cur = el.value; el.innerHTML = `<option value="">전체</option>` + vals.map(v=>`<option>${v}</option>`).join(""); if(vals.includes(cur)) el.value = cur; }
+function refreshOpts(){
+  opts($("fSggu"), uniq(RAW.map(r=>r.sggu)));
+  opts($("fEmd"), uniq(RAW.filter(r=>!$("fSggu").value||r.sggu===$("fSggu").value).map(r=>r.emd)));
+  opts($("fSub"), uniq(RAW.map(r=>r.subject)));
+}
+function resetFilters(){ ["fSggu","fEmd","fSub","fGrade"].forEach(id=>$(id).value=""); $("fQ").value=""; }
+function apply(light){
+  score(RAW);
+  const f = {sggu:$("fSggu").value,emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
+  VIEW = RAW.filter(r=>(!f.sggu||r.sggu===f.sggu)&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q)));
+  VIEW.sort((a,b)=>{ if(sortK==="score"&&a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
+    return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
+  render(light);
+}
+
+/* ───────── 렌더 ───────── */
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function render(light){
+  const L2 = VIEW.filter(r=>r.looked), a = L2.filter(r=>r.grade==="A").length;
+  $("kN").textContent = `${L2.length.toLocaleString()} / ${VIEW.length.toLocaleString()}`;
+  $("kA").textContent = L2.length ? a.toLocaleString() : "-";
+  $("kAvg").textContent = L2.length ? Math.round(L2.reduce((s,r)=>s+r.score,0)/L2.length) : "-";
+  const by = {}; VIEW.forEach(r=>{ const k=r.sggu||"(미상)"; (by[k]=by[k]||{A:0,B:0,C:0,N:0,n:0})[r.grade]++; by[k].n++; });
+  const ent = Object.entries(by).sort((x,y)=>y[1].A-x[1].A||y[1].n-x[1].n);
+  $("kTop").textContent = ent.length&&ent[0][1].A ? `${ent[0][0]} (${ent[0][1].A})` : "-";
+  const mx = Math.max(1,...ent.map(e=>e[1].n));
+  $("bars").innerHTML = ent.slice(0,15).map(([k,v])=>`<div class="b" data-s="${esc(k)}"><span>${esc(k)}</span><div class="t">
+    <i style="width:${v.A/mx*100}%;background:var(--a)"></i><i style="width:${v.B/mx*100}%;background:var(--b)"></i><i style="width:${v.C/mx*100}%;background:var(--c)"></i><i style="width:${v.N/mx*100}%;background:var(--line)"></i></div>
+    <span class="sub">${v.n}곳 · A ${v.A}</span></div>`).join("") || `<div class="sub">데이터 없음</div>`;
+  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ $("fSggu").value=el.dataset.s; $("fEmd").value=""; refreshOpts(); apply(); });
+  $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
+  $("btnTop5").textContent = `현재 목록 질병정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
+  document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td>${esc(r.subject)}</td><td class="n">${r.chronicN}</td>
+    <td>${r.looked ? ((r.top5||"").split("|").filter(Boolean).map(d=>`<span class="chip ${isChronic(d)?"hit":""}">${esc(d)}</span>`).join("")||'<span class="sub">자료 없음</span>') : '<span class="sub">미조회</span>'}</td>
+    <td>${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
+  if(!light) drawMap();
+}
+function drawMap(){
+  if(!window.L) return;
+  if(!map){ map = L.map("map"); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"}).addTo(map); }
+  if(layer) layer.remove();
+  const cs = getComputedStyle(document.documentElement), col = {A:cs.getPropertyValue("--a"),B:cs.getPropertyValue("--b"),C:cs.getPropertyValue("--c"),N:"#8a94a0"};
+  const pts = VIEW.filter(r=>r.lat&&r.lng).slice(0,3000);
+  layer = L.layerGroup(pts.map(r=>L.circleMarker([r.lat,r.lng],{radius:r.grade==="A"?7:5,color:col[r.grade],fillColor:col[r.grade],fillOpacity:r.grade==="N"?.35:.8,weight:1})
+    .bindPopup(`<b>${esc(r.name)}</b><br>${r.grade==="N"?"질병정보 미조회":`${r.grade}등급 · 지수 ${r.score}`}<br>${esc(r.subject)} · ${esc((r.top5||"").replace(/\|/g,", "))}<br>${esc(r.tel)}`))).addTo(map);
+  if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView([36.5,127.8],7);
+}
+function say(t, err){ $("msg").textContent = t; $("msg").className = "msg" + (err?" err":""); }
+function setProg(p){ $("prog").style.width = Math.min(100,p) + "%"; }
+
+/* ───────── 샘플 (가상 기관, 미리보기용) ───────── */
+function sample(){
+  const areas = [["서울","중랑구",37.606,127.093,["신내동","면목동","상봉동","망우동"]],["서울","노원구",37.654,127.056,["상계동","중계동","하계동","월계동"]],["서울","강서구",37.551,126.850,["화곡동","등촌동","가양동","방화동"]]];
+  const subs = ["내과","내과","내과","가정의학과","일반의"], pool = ["고혈압","당뇨병","감기","이상지질혈증","위식도역류질환","관절염","비염","장염","골다공증","갑상선질환","불면증","천식"];
+  let s = 7; const rnd = () => (s = (s*9301+49297)%233280)/233280, out = [];
+  areas.forEach(([sido,sggu,la,ln,emds],ai)=>{ for(let i=0;i<25;i++){
+    const sub = subs[Math.floor(rnd()*subs.length)], t = new Set();
+    while(t.size<5) t.add(rnd()<(sub==="일반의"?.2:.55) ? pool[Math.floor(rnd()*4)] : pool[Math.floor(rnd()*pool.length)]);
+    out.push({ykiho:`S${ai}${i}`,name:`샘플${sub}의원 ${ai+1}-${String(i+1).padStart(2,"0")}`,sido,sggu,emd:emds[Math.floor(rnd()*emds.length)],addr:`${sido} ${sggu} (샘플)`,tel:"",
+      subject:sub,doctors:1+Math.floor(rnd()*3),years:+(rnd()*25).toFixed(1),top5:[...t].join("|"),looked:i%6!==0,hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
+  }});
+  return out.map(r=>r.looked?r:{...r,top5:""});
+}
+
+/* ───────── 이벤트 ───────── */
+$("aSido").innerHTML = SIDO.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+$("aSido").value = store.get("chronic_sido","110000");
+$("aSido").onchange = () => store.set("chronic_sido", $("aSido").value);
+$("apiBase").value = store.get("chronic_api","");
+$("apiBase").onchange = () => store.set("chronic_api", $("apiBase").value.trim());
+$("btnBasis").onclick = loadBasis;
+$("btnTop5").onclick = loadTop5;
+$("btnStop").onclick = () => { stopFlag = true; say("중지했습니다. 다시 누르면 남은 곳부터 이어서 조회합니다."); };
+$("btnCache").onclick = () => { if(confirm("저장된 질병정보 캐시를 지울까요?")){ T5 = {}; store.set("chronic_t5", T5); RAW.forEach(r=>{r.looked=false;r.top5="";}); apply(); } };
+$("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--b)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
+$("export").onclick = () => {
+  const cols = ["grade","score","name","sido","sggu","emd","subject","chronicN","top5","hp_good","dm_good","years","doctors","tel","addr"];
+  const csv = "﻿" + [cols.join(",")].concat(VIEW.map(r=>cols.map(c=>`"${String(c==="grade"&&r.grade==="N"?"미조회":r[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = "chronic_targets.csv"; a.click();
+};
+function showW(){ const w=W(); [1,2,3,4,5].forEach(i=>$("w"+i+"v").textContent=Math.round(w[i-1])); }
+["w1","w2","w3","w4","w5"].forEach(id=>$(id).oninput=()=>{showW();apply(true);});
+["w1","w2","w3","w4","w5"].forEach(id=>$(id).onchange=()=>apply());
+[$("tA"),$("tB"),$("fGrade"),$("fSub"),$("fEmd")].forEach(el=>el.onchange=()=>apply());
+$("fQ").oninput = () => apply(true);
+$("fSggu").onchange = () => { $("fEmd").value=""; refreshOpts(); apply(); };
+document.querySelectorAll("#tbl th").forEach(th=>th.onclick=()=>{ const k=th.dataset.k; sortDir = sortK===k ? -sortDir : -1; sortK=k; apply(true); });
+/* ───────── 지표 설명 ───────── */
+function openHelp(sec){
+  const w = W();
+  document.querySelectorAll(".help .wt").forEach(el => el.textContent = `현재 ${Math.round(w[+el.dataset.wt-1])}점`);
+  $("hgA").textContent = $("tA").value; $("hgB").textContent = $("tB").value;
+  $("helpModal").classList.add("on");
+  document.body.style.overflow = "hidden";
+  const target = document.getElementById("h-" + (sec || "top"));
+  document.querySelectorAll(".help details").forEach(d => d.open = d === target);
+  if(target) setTimeout(() => target.scrollIntoView({behavior:"smooth", block:"start"}), 30);
+}
+function closeHelp(){ $("helpModal").classList.remove("on"); document.body.style.overflow = ""; }
+document.querySelectorAll("[data-help]").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); openHelp(el.dataset.help); }));
+$("helpClose").onclick = closeHelp; $("helpOk").onclick = closeHelp;
+$("helpModal").onclick = e => { if(e.target.id === "helpModal") closeHelp(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeHelp(); });
+
+showW(); refreshOpts(); apply();
+</script>
+</body>
+</html>
