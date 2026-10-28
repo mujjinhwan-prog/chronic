@@ -2,17 +2,21 @@
 // 인증키는 Vercel 환경변수 DATA_GO_KR_KEY 에만 저장되고 브라우저에는 노출되지 않습니다.
 // 호출 예) /api/hira?svc=basis&sidoCd=110000&dgsbjtCd=01&pageNo=1
 //         /api/hira?svc=top5&ykiho=...
+// 심평원이 API 버전을 올려 주소가 바뀌면, 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
+//   BASIS_URL = 병원정보서비스 병원기본목록 요청주소 (End Point + /오퍼레이션명)
+//   TOP5_URL  = 병원진료정보조회서비스 의원진료상위질병5개 요청주소
+// 진단용: /api/hira?svc=ping  → 현재 사용 중인 주소 확인
 
 export const config = { runtime: "edge", regions: ["icn1"] }; // 서울 리전에서 호출
 
 const SERVICES = {
   basis: {
-    url: "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList",
+    url: process.env.BASIS_URL || "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList",
     params: ["pageNo", "numOfRows", "sidoCd", "sgguCd", "emdongNm", "clCd", "dgsbjtCd", "yadmNm"],
     ttl: 86400, // 기관 목록: 하루 캐시
   },
   top5: {
-    url: "https://apis.data.go.kr/B551182/hospDiagInfoService1/getClinicTop5List1",
+    url: process.env.TOP5_URL || "https://apis.data.go.kr/B551182/hospDiagInfoService1/getClinicTop5List1",
     params: ["ykiho"],
     ttl: 604800, // 상위질병: 일주일 캐시 (1년치 집계라 자주 안 바뀜)
   },
@@ -53,6 +57,13 @@ export default async function handler(req) {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
 
   const q = new URL(req.url).searchParams;
+  if (q.get("svc") === "ping") {
+    return new Response(JSON.stringify({
+      keySet: !!process.env.DATA_GO_KR_KEY,
+      basis: SERVICES.basis.url,
+      top5: SERVICES.top5.url,
+    }), { status: 200, headers });
+  }
   const svc = SERVICES[q.get("svc")];
   if (!svc) return new Response(JSON.stringify({ error: "svc는 basis 또는 top5" }), { status: 400, headers });
 
@@ -71,14 +82,4 @@ export default async function handler(req) {
     const body = await r.text();
     const data = parseXml(body);
     const ok = r.ok && (!data.resultCode || data.resultCode === "00" || data.resultCode === "0000");
-    if (!ok) {
-      return new Response(JSON.stringify({ error: data.resultMsg || `HTTP ${r.status}`, code: data.resultCode, raw: body.slice(0, 300) }), { status: 502, headers });
-    }
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { ...headers, "Cache-Control": `public, s-maxage=${svc.ttl}, stale-while-revalidate=86400` },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers });
-  }
-}
+ 
