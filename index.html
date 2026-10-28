@@ -219,7 +219,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <dl>
         <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 <b>비대면 재진에 적합한 질환</b>(고혈압·당뇨병·이상지질혈증 등)이 몇 개인지. 기준은 아래 '비대면 적합 질환 기준' 참고</dd>
         <dt>왜 재진인가</dt><dd>만성질환 환자는 보통 1~3개월마다 같은 의원에 와서 약을 이어 받습니다. 상위 질병에 만성질환이 많을수록 환자 구성 자체가 재진 위주입니다.</dd>
-        <dt>점수 계산</dt><dd>적합 질환 개수 ÷ 5 × 가중치 (5개 모두 적합 질환이면 만점)</dd>
+        <dt>점수 계산</dt><dd>적합 질환 0개 = 0, 1개 = 50%, 2개 = 80%, 3개 이상 = 만점. 상위 5개는 감기·장염 같은 급성 질환이 진료 건수로 앞서기 쉬워, 만성질환이 <b>하나만 들어 있어도</b> 의미 있는 신호로 봅니다.</dd>
         <dt>데이터</dt><dd>심평원 병원진료정보조회서비스 (의원진료상위질병5개). 질병명이 어떻게 분류됐는지는 왼쪽 '비대면 적합 질환 설정 → 조회된 질병명 점검'에서 하나씩 확인·수정할 수 있습니다.</dd>
       </dl>
     </details>
@@ -343,7 +343,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <label>등급</label>
       <select id="fGrade"><option value="">전체</option><option>A</option><option>B</option><option>C</option><option value="N">미조회</option></select>
       <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
-      <label class="opt"><input type="checkbox" id="oHide" checked>비대면 적합 질환이 없는 의원 숨기기</label>
+      <label class="opt"><input type="checkbox" id="oHide">비대면 적합 질환이 없는 의원 숨기기</label>
       <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
 
       <hr>
@@ -386,6 +386,8 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <div class="note">이 페이지와 같은 Vercel 프로젝트면 비워두세요.</div>
         <button class="btn full" id="btnCache">질병정보 캐시 비우기</button>
         <button class="btn full" id="btnSample">샘플 데이터로 미리보기</button>
+        <button class="btn full" id="btnRaw">질병정보 원본 확인 (현재 목록 첫 의원)</button>
+        <pre id="rawOut" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:11px;background:var(--soft);padding:8px;border-radius:8px;max-height:260px;overflow:auto"></pre>
       </details>
       <div style="margin-top:12px"><button class="btn pri full" id="export">현재 목록 CSV 내보내기</button></div>
       <div class="note">개별 의원의 실제 재진율은 공개되지 않아, 공개 지표로 만든 <b>추정 지수</b>입니다. <a href="#" data-help="limit">한계 보기</a></div>
@@ -568,7 +570,14 @@ async function loadTop5(){
   $("btnTop5").disabled = false; $("btnStop").style.display = "none";
   if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${done-fail}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
   else if(fail && done - fail === 0) say(`질병정보 조회가 모두 실패했습니다. 원인: ${lastErr} — data.go.kr에서 '병원진료정보조회서비스' 활용신청이 승인됐는지 확인하세요.`, true);
-  else say(`조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 (다시 누르면 실패분만 재시도) · 마지막 오류: ${lastErr}`:""}`, !!fail);
+  else {
+    const okRows = todo.filter(r => r.looked), empty = okRows.filter(r => !r.top5).length, zero = okRows.filter(r => r.top5 && !r.top5.split("|").some(isChronic)).length;
+    let m = `조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 · 마지막 오류: ${lastErr}`:""}`;
+    if(okRows.length) m += ` · 질병정보 없음 ${empty}곳, 적합 질환 0개 ${zero}곳, 적합 질환 1개 이상 ${okRows.length-empty-zero}곳`;
+    if(okRows.length >= 5 && empty / okRows.length > 0.8) m += " ⚠ 대부분 질병정보가 비어 있습니다. 설정 → '질병정보 원본 확인'으로 응답을 확인해 주세요.";
+    else if(okRows.length >= 5 && zero / okRows.length > 0.8) m += " ⚠ 대부분 적합 질환이 0개입니다. 비대면 적합 질환 설정 → '조회된 질병명 점검'에서 분류를 확인해 주세요.";
+    say(m, !!fail || /⚠/.test(m));
+  }
   apply();
   if(isMobile() && done - fail > 0) $("secList").scrollIntoView({behavior:"smooth"});
 }
@@ -664,6 +673,7 @@ $("goodClear").onclick = () => { if(confirm("저장된 고혈압·당뇨 평가 
 buildIdx();
 
 /* ───────── 점수 ───────── */
+const CURVE = [0, .5, .8, 1, 1, 1];   // Top5 중 적합 질환 수 → 점수 비율 (1개만 있어도 절반)
 function W(){ const w=[1,2,3,4,5].map(i=>+$("w"+i).value); if(typeof evalLoaded==="function" && !evalLoaded()) w[1]=0; const t=w.reduce((a,b)=>a+b,0)||1; return w.map(x=>x/t*100); }
 function score(rows){
   const [w1,w2,w3,w4,w5] = W(), tA=+$("tA").value, tB=+$("tB").value;
@@ -673,7 +683,7 @@ function score(rows){
     const good = (r.hp_good==="Y"?1:0)+(r.dm_good==="Y"?1:0); r.good = good;
     const subS = /내과|가정의학/.test(r.subject) ? 1 : /일반의/.test(r.subject) ? .7 : .2;
     const y = Math.min((+r.years||0)/10,1), d = Math.min((+r.doctors||0)/3,1);
-    r.score = Math.round(w1*((+r.chronicN||0)/5) + w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d);
+    r.score = Math.round(w1*(CURVE[Math.min(+r.chronicN||0,5)]) + w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d);
     r.grade = !r.looked ? "N" : r.score>=tA ? "A" : r.score>=tB ? "B" : "C";
   });
 }
@@ -803,6 +813,15 @@ $("apiBase").onchange = () => store.set("chronic_api", $("apiBase").value.trim()
 $("btnBasis").onclick = loadBasis;
 $("btnTop5").onclick = loadTop5;
 $("btnStop").onclick = () => { stopFlag = true; say("중지했습니다. 다시 누르면 남은 곳부터 이어서 조회합니다."); };
+$("btnRaw").onclick = async () => {
+  const r = VIEW[0] || RAW[0], out = $("rawOut"); out.style.display = "block";
+  if(!r){ out.textContent = "먼저 의원 목록을 불러오세요."; return; }
+  out.textContent = `${r.name} 조회 중…`;
+  try{
+    const res = await fetch(apiBase() + "?" + new URLSearchParams({svc:"top5", ykiho:r.ykiho}));
+    out.textContent = `${r.name} (HTTP ${res.status})\n` + JSON.stringify(await res.json(), null, 1);
+  }catch(e){ out.textContent = "오류: " + e.message; }
+};
 $("btnCache").onclick = () => { if(confirm("저장된 질병정보 캐시를 지울까요?")){ T5 = {}; store.set("chronic_t5", T5); RAW.forEach(r=>{r.looked=false;r.top5="";}); apply(); } };
 $("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--acc)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
 $("export").onclick = () => {
