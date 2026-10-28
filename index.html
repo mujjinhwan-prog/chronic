@@ -414,6 +414,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
           <select id="mSort" class="mobile-only" aria-label="정렬">
             <option value="score">지수 높은 순</option><option value="suit">적합도 높은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
           </select></div>
+        <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
         <div class="tbl"><table id="tbl"><thead><tr>
           <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
           <th data-k="subject">과목</th><th data-k="suit">적합도</th><th data-k="top5" id="thTop5">비대면 적합 질환</th><th data-k="good">평가양호</th>
@@ -709,7 +710,9 @@ function score(rows){
     const good = (r.hp_good==="Y"?1:0)+(r.dm_good==="Y"?1:0); r.good = good;
     const subS = /내과|가정의학/.test(r.subject) ? 1 : /일반의/.test(r.subject) ? .7 : .2;
     const y = Math.min((+r.years||0)/10,1), d = Math.min((+r.doctors||0)/3,1);
-    r.score = Math.round(w1*suitRatio(r.coreN, r.condN) + w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d);
+    r.noData = r.looked && !t5.length;   // 질병정보가 비어서 온 의원: 부적합이 아니라 '정보 없음'
+    const base = w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d;
+    r.score = r.noData ? Math.round(base * 100 / Math.max(1, 100 - w1)) : Math.round(w1*suitRatio(r.coreN, r.condN) + base);
     r.grade = !r.looked ? "N" : r.score>=tA ? "A" : r.score>=tB ? "B" : "C";
   });
 }
@@ -745,7 +748,7 @@ function resetFilters(){ SEL.clear(); ["fEmd","fSub","fGrade"].forEach(id=>$(id)
 function apply(light){
   score(RAW);
   const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
-  VIEW = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.chronicN>0));
+  VIEW = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0));
   VIEW.sort((a,b)=>{ if(sortK==="score"&&a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
   render(light);
@@ -753,8 +756,8 @@ function apply(light){
 
 /* ───────── 렌더 ───────── */
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const chipHtml = (r, only) => r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d => !only || isSuit(d)).map(d => { const t = tierOf(d); return `<span class="chip ${t==="core"?"hit":t==="cond"?"cond":t==="unk"?"unk":"off"}" title="${TIER_NAME[t]}">${esc(d)}</span>`; }).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"자료 없음"}</span>`) : '<span class="sub">미조회</span>';
-const suitTxt = r => r.looked ? `${r.coreN?`만성 ${r.coreN}`:""}${r.coreN&&r.condN?" · ":""}${r.condN?`조건부 ${r.condN}`:""}` || "0" : "";
+const chipHtml = (r, only) => r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d => !only || isSuit(d)).map(d => { const t = tierOf(d); return `<span class="chip ${t==="core"?"hit":t==="cond"?"cond":t==="unk"?"unk":"off"}" title="${TIER_NAME[t]}">${esc(d)}</span>`; }).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"질병정보 없음 (과목·개원·의사 수로만 평가)"}</span>`) : '<span class="sub">미조회</span>';
+const suitTxt = r => r.noData ? "정보 없음" : r.looked ? `${r.coreN?`만성 ${r.coreN}`:""}${r.coreN&&r.condN?" · ":""}${r.condN?`조건부 ${r.condN}`:""}` || "0" : "";
 function render(light){
   const L2 = VIEW.filter(r=>r.looked), a = L2.filter(r=>r.grade==="A").length;
   $("kN").textContent = `${L2.length.toLocaleString()} / ${VIEW.length.toLocaleString()}`;
@@ -775,6 +778,11 @@ function render(light){
     <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${suitTxt(r)}</td>
     <td>${chipHtml(r, $("oOnly").checked)}</td>
     <td>${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
+  const L3 = VIEW.filter(r => r.looked), nd = L3.filter(r => r.noData).length, z = L3.filter(r => !r.noData && !r.chronicN).length;
+  const dw = $("dataWarn");
+  if(L3.length >= 5 && nd / L3.length > 0.5){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 중 <b>${nd}곳은 심평원이 질병정보를 비워서 보냈습니다.</b> 점수 문제가 아니라 데이터가 안 온 것이라, 이 의원들은 과목·개원 연수·의사 수로만 평가했습니다. 왼쪽 설정 → <b>질병정보 원본 확인</b> 결과를 확인해 주세요.`; }
+  else if(L3.length >= 5 && z / L3.length > 0.8){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 대부분이 적합 질환 0개입니다. <b>비대면 적합 질환 설정 → 조회된 질병명 점검</b>에서 질병명이 '미분류'로 빠지고 있지 않은지 확인해 주세요.`; }
+  else dw.style.display = "none";
   if(isMobile()) renderCards(); else $("cards").innerHTML = "";
   if(!light){ drawMap(); renderDz(); evalStatus(); }
 }
