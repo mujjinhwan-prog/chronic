@@ -63,6 +63,10 @@ tbody tr:hover{background:var(--acc-soft)}
 .side .tele label small{grid-column:2;color:var(--sub);font-size:11px;line-height:1.35}
 .side .opt{display:flex;gap:6px;align-items:center;font-size:12.5px;margin:6px 0;color:var(--ink);cursor:pointer}
 .chip.off{opacity:.45}
+table.no-t5 .c-t5,table.no-ev .c-ev{display:none}
+.hb{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;margin-right:2px;background:var(--soft2);color:var(--pri)}
+.hb.on{background:var(--acc-soft);color:var(--acc)}
+.pct{color:var(--sub);font-size:11.5px}
 .chip.cond{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
 .chip.unk{border-style:dashed;color:var(--sub)}
 .tele .grp.c{color:var(--acc)}
@@ -208,69 +212,73 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 
 <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="mbox help">
-    <div class="mhead"><h2 id="helpTitle">재진 많은 의원은 어떻게 판단하나요?</h2><button class="x" id="helpClose" aria-label="닫기">×</button></div>
+    <div class="mhead"><h2 id="helpTitle">지수는 어떻게 계산하나요?</h2><button class="x" id="helpClose" aria-label="닫기">×</button></div>
 
     <div class="lead" id="h-top">
-      공개 데이터에는 의원별 <b>재진 비율</b>이 없습니다. 그래서 이 대시보드는
-      <b>"재진이 많을 수밖에 없는 조건"</b>을 얼마나 갖췄는지로 점수를 매깁니다.<br>
-      한 줄 요약: <b>만성질환 위주 진료 + 꾸준한 관리 이력 + 오래된 동네 내과</b> = 재진 많은 의원
+      공개 데이터에는 의원별 <b>재진율·비대면 실적</b>이 없습니다. 그래서 이 대시보드는 의원마다 실제로 차이가 나는 공개 정보
+      (<b>진료시간, 내과 전문의, 평가 결과, 개원 연수, 규모</b>)로 점수를 매기고, <b>지역 안 순위</b>로 등급을 나눕니다.<br>
+      한 줄 요약: <b>환자 편의 중심 + 만성질환 관리 역량 + 오래된 동네 내과</b> = 비대면 재진 영업 우선 대상
     </div>
 
-    <h3>잠재지수를 이루는 5가지 지표</h3>
-    <div class="sub" style="font-size:12px">현재 화면의 가중치가 오른쪽에 표시됩니다. 지표명을 누르면 펼쳐집니다.</div>
+    <h3>지수를 이루는 6가지 지표</h3>
+    <div class="sub" style="font-size:12px">현재 가중치가 오른쪽에 표시됩니다. 데이터가 없는 지표는 그 의원 점수에서 빼고 나머지로 다시 100점 환산합니다 (빈칸이 감점이 되지 않음).</div>
 
     <details id="h-w1">
-      <summary><span>① 비대면 적합도 (Top5 질환 구성) <span class="sub">— 가장 강한 신호</span></span><span class="wt" data-wt="1"></span></summary>
+      <summary><span>① 진료 접근성 (야간·주말 진료)</span><span class="wt" data-wt="1"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 <b>비대면 재진에 적합한 질환</b>(고혈압·당뇨병·이상지질혈증 등)이 몇 개인지. 기준은 아래 '비대면 적합 질환 기준' 참고</dd>
-        <dt>왜 재진인가</dt><dd>만성질환 환자는 보통 1~3개월마다 같은 의원에 와서 약을 이어 받습니다. 상위 질병에 만성질환이 많을수록 환자 구성 자체가 재진 위주입니다.</dd>
-        <dt>점수 계산</dt><dd>질병을 세 단계로 나눠 더합니다.<br>
-          · <b style="color:var(--pri2)">만성</b>(고혈압·당뇨 등, 재진 핵심): 1개당 50%<br>
-          · <b style="color:var(--acc)">조건부</b>(감기·위염·비염·피부염 등, 비대면은 가능하나 단기 위주): 1개당 15%, 최대 45%<br>
-          · <b>제외</b>(비만·ADHD 등 비대면 처방 금지 약물 위주): 0<br>
-          예) 감기·위염·고혈압·비염·장염 → 만성 1 + 조건부 4 = 50% + 45% = 95%.<br>
-          상위 5개는 진료 건수 기준이라 감기 같은 급성 질환이 앞서기 쉬워, 만성질환이 하나만 있어도 크게 반영합니다.</dd>
-        <dt>데이터</dt><dd>심평원 병원진료정보조회서비스 (의원진료상위질병5개). 질병명이 어떻게 분류됐는지는 왼쪽 '비대면 적합 질환 설정 → 조회된 질병명 점검'에서 하나씩 확인·수정할 수 있습니다.</dd>
+        <dt>무엇을 보나</dt><dd>평일 19시 이후 진료하는 날 수, 토요일·일요일 진료 여부</dd>
+        <dt>왜 중요한가</dt><dd>환자 편의를 우선하는 의원일수록 비대면 진료 같은 새로운 진료 방식을 받아들일 가능성이 높고, 직장인 만성질환 환자가 많습니다. 의원마다 차이가 커서 변별력이 높은 지표입니다.</dd>
+        <dt>점수 계산</dt><dd>야간 진료(평일 하루당 8%, 최대 40%) + 토요일 35% + 일요일 25%</dd>
+        <dt>데이터</dt><dd>심평원 의료기관별상세정보서비스 (진료시간)</dd>
       </dl>
     </details>
 
     <details id="h-w2">
-      <summary><span>② 고혈압·당뇨 양호기관</span><span class="wt" data-wt="2"></span></summary>
+      <summary><span>② 만성질환 관리 역량 (내과·가정의학과 전문의)</span><span class="wt" data-wt="2"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>심평원 고혈압·당뇨병 적정성평가에서 '양호' 판정을 받았는지</dd>
-        <dt>왜 재진인가</dt><dd>이 평가의 핵심 지표가 <b>방문 지속</b>과 <b>처방 지속</b> 환자 비율입니다. 양호 판정은 환자를 꾸준히 다시 오게 하고 있다는 공식 확인에 가깝습니다.</dd>
-        <dt>점수 계산</dt><dd>두 질환 모두 양호 = 만점, 하나만 양호 = 60%, 없음 = 0</dd>
-        <dt>데이터</dt><dd>심평원 병원평가 검색에서 받은 고혈압·당뇨병 평가 엑셀 (왼쪽 '고혈압·당뇨 평가 결과 반영'에 업로드). <b>평가 파일을 올리지 않으면 이 지표는 점수에서 빠지고</b>, 나머지 지표만으로 100점 환산합니다.</dd>
+        <dt>무엇을 보나</dt><dd>내과·가정의학과 전문의 수</dd>
+        <dt>왜 중요한가</dt><dd>만성질환 재진 환자를 꾸준히 보는 핵심 인력입니다. 일반의 1인 의원과 내과 전문의가 여럿인 의원을 구분합니다.</dd>
+        <dt>점수 계산</dt><dd>0명 = 0, 1명 = 60%, 2명 = 85%, 3명 이상 = 만점. 과목별 전문의 정보가 없으면 표시과목과 전문의 총수로 추정합니다.</dd>
+        <dt>데이터</dt><dd>심평원 의료기관별상세정보서비스 (과목별 전문의), 병원정보서비스 (전문의 수)</dd>
       </dl>
     </details>
 
     <details id="h-w3">
-      <summary><span>③ 표시과목 (내과·가정의학과)</span><span class="wt" data-wt="3"></span></summary>
+      <summary><span>③ 비대면 질환 구성 (Top5)</span><span class="wt" data-wt="3"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>의원이 내건 진료과목</dd>
-        <dt>왜 재진인가</dt><dd>내과·가정의학과는 만성질환을 지속 관리하는 대표 과목입니다. 이비인후과·정형외과 등은 단기 내원이 많습니다.</dd>
-        <dt>점수 계산</dt><dd>내과·가정의학과 = 만점, 일반의 = 70%, 그 외 = 20%</dd>
-        <dt>데이터</dt><dd>질병정보를 조회하면 심평원이 주는 <b>공식 표시과목</b>으로 확정됩니다. 조회 전에는 기관명(예: "○○내과의원")으로 추정하며, 표에 <span class="est">추정</span>으로 표시됩니다.</dd>
+        <dt>무엇을 보나</dt><dd>최근 1년 진료량 상위 5개 질병 중 비대면 진료가 가능한 질환의 구성</dd>
+        <dt>점수 계산</dt><dd><b style="color:var(--pri2)">만성</b> 1개당 50%, <b style="color:var(--acc)">조건부</b> 1개당 15%(최대 45%), 제외 0. 예) 감기·위염·고혈압·비염·장염 = 95%</dd>
+        <dt>한계</dt><dd>질병 이름만 오고 환자 수·순위가 없어 보조 지표로만 씁니다. 심평원이 질병정보를 주지 않는 의원은 이 지표를 빼고 계산하며, 목록 전체에 질병정보가 없으면 해당 열을 숨깁니다.</dd>
+        <dt>데이터</dt><dd>심평원 병원진료정보조회서비스</dd>
       </dl>
     </details>
 
     <details id="h-w4">
-      <summary><span>④ 개원 연수</span><span class="wt" data-wt="4"></span></summary>
+      <summary><span>④ 고혈압·당뇨 양호기관</span><span class="wt" data-wt="4"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>개설일로부터 지난 기간</dd>
-        <dt>왜 재진인가</dt><dd>오래된 의원일수록 수년째 다니는 단골 환자군이 쌓여 있습니다.</dd>
-        <dt>점수 계산</dt><dd>10년 이상 = 만점, 그 미만은 비례 (예: 5년 = 50%)</dd>
-        <dt>데이터</dt><dd>심평원 병원정보서비스 (개설일자)</dd>
+        <dt>무엇을 보나</dt><dd>심평원 고혈압·당뇨병 적정성평가 '양호' 여부</dd>
+        <dt>왜 중요한가</dt><dd>평가 핵심 지표가 방문 지속·처방 지속 환자 비율이라, 재진 환자를 꾸준히 관리한다는 공식 확인입니다.</dd>
+        <dt>점수 계산</dt><dd>둘 다 양호 = 만점, 하나만 = 60%, 없음 = 0. 평가 파일을 올리지 않으면 지표 전체를 뺍니다.</dd>
+        <dt>데이터</dt><dd>심평원 병원평가 엑셀 (왼쪽 '고혈압·당뇨 평가 결과 반영')</dd>
       </dl>
     </details>
 
     <details id="h-w5">
-      <summary><span>⑤ 의사 수</span><span class="wt" data-wt="5"></span></summary>
+      <summary><span>⑤ 개원 연수</span><span class="wt" data-wt="5"></span></summary>
       <dl>
-        <dt>무엇을 보나</dt><dd>의원에 근무하는 의사 수</dd>
-        <dt>왜 재진인가</dt><dd>진료 용량이 클수록 재진 환자를 많이 소화할 수 있습니다.</dd>
-        <dt>점수 계산</dt><dd>3명 이상 = 만점, 그 미만은 비례 (예: 1명 = 33%)</dd>
-        <dt>데이터</dt><dd>심평원 병원정보서비스 (의사 총수)</dd>
+        <dt>무엇을 보나</dt><dd>개설일로부터 지난 기간</dd>
+        <dt>왜 중요한가</dt><dd>오래된 의원일수록 장기 재진 환자군이 쌓여 있습니다.</dd>
+        <dt>점수 계산</dt><dd>상한 없이 연속 반영: 25년 = 만점 (예: 5년 = 20%, 15년 = 60%)</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스 (개설일자)</dd>
+      </dl>
+    </details>
+
+    <details id="h-w6">
+      <summary><span>⑥ 진료 규모 (의사 수)</span><span class="wt" data-wt="6"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>근무 의사 수</dd>
+        <dt>점수 계산</dt><dd>1명 43%, 2명 68%, 3명 86%, 4명 이상 만점</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스</dd>
       </dl>
     </details>
 
@@ -291,36 +299,37 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <li>복지부가 '오·남용 우려 의약품'을 고시로 추가 지정할 예정이므로, 확정되면 왼쪽 <b>비대면 적합 질환 설정</b>에서 체크를 바꾸면 바로 반영됩니다.</li>
     </ul>
 
-    <h3 id="h-grade">등급 기준</h3>
+    <h3 id="h-grade">등급 기준 — 지역 안 순위</h3>
     <div class="gradebox">
-      <div><span class="g gA">A</span> <span id="hgA">70</span>점 이상 · 우선 방문</div>
-      <div><span class="g gB">B</span> <span id="hgB">50</span>점 이상 · 관리 대상</div>
-      <div><span class="g gC">C</span> 그 미만</div>
-      <div><span class="g gN">-</span> 질병정보 미조회</div>
+      <div><span class="g gA">A</span> 상위 <span id="hgA">20</span>% · 우선 방문</div>
+      <div><span class="g gB">B</span> 그다음 <span id="hgB">30</span>% · 관리 대상</div>
+      <div><span class="g gC">C</span> 나머지</div>
+      <div><span class="g gN">-</span> 상세정보 미조회</div>
     </div>
-    <div class="sub" style="font-size:12px">가중치와 기준점은 왼쪽 '잠재지수 가중치'에서 바꿀 수 있고, 합계는 자동으로 100점 만점이 됩니다.</div>
+    <div class="sub" style="font-size:12px">점수를 정해진 기준점으로 자르지 않고, <b>지금 선택한 지역 안에서 순위</b>로 등급을 매깁니다. 모두가 높은 점수를 받아도 A는 항상 상위 일부만 됩니다. 비율은 왼쪽 '지수 가중치'에서 바꿀 수 있습니다.</div>
 
     <h3 id="h-limit">한계 — 꼭 알아두세요</h3>
     <ul>
-      <li>상위 5개 질병은 <b>순위가 아니라 가나다순</b>으로 제공돼, 고혈압이 1위인지 5위인지는 알 수 없습니다.</li>
-      <li>같은 고혈압 의원이라도 <b>환자 수 규모</b>는 공개되지 않습니다.</li>
-      <li>따라서 이 점수는 "재진이 많을 <b>가능성</b>"을 매긴 <b>추정치</b>이며, 실제 순위와 차이가 있을 수 있습니다.</li>
+      <li>공공데이터에는 의원별 <b>환자 수·재진율·비대면 진료 실적</b>이 없습니다. 이 지수는 "비대면 진료를 할 것이다"의 예측이 아니라 <b>비대면 재진 잠재력이 있는 의원의 영업 우선순위</b>입니다.</li>
+      <li>원장 성향, 비대면 플랫폼 입점 여부처럼 실제 도입을 좌우하는 요인은 공개 데이터에 없어, MR 현장 확인으로 보완해야 합니다.</li>
+      <li>상위 5개 질병은 이름만 오고 순위·환자 수가 없어 보조 지표로만 씁니다.</li>
     </ul>
 
     <h3 id="h-improve">정확도를 높이는 방법</h3>
     <ul>
       <li><b>MR 현장 확인</b>: A등급 의원 방문 시 만성질환 환자 비중, 비대면 진료 운영 여부를 CRM에 기록 → 몇 달 뒤 점수와 비교해 가중치 조정</li>
       <li><b>사내 처방 데이터 결합</b>: 의원별 만성질환 약 처방 건수가 있다면 가장 직접적인 재진 지표</li>
-      <li><b>양호기관 목록 반영</b>: 심평원 공개 목록을 병합하면 ② 지표가 채워집니다</li>
+      <li><b>양호기관 목록 반영</b>: 심평원 평가 엑셀을 올리면 ④ 지표가 채워집니다</li>
+      <li><b>지역별 실제 비대면 이용량</b>: 국민건강보험공단에 시군구별 비대면 진료 청구 건수를 공공데이터 제공신청하면 가장 직접적인 지역 지표가 됩니다</li>
     </ul>
     <div style="text-align:right;margin:14px 0 10px"><button class="btn pri" id="helpOk">확인</button></div>
   </div>
 </div>
 <div class="wrap">
   <div class="row kpis">
-    <div class="card kpi"><div class="v" id="kN">-</div><div class="l">대상 의원 (질병정보 조회 완료)</div></div>
+    <div class="card kpi"><div class="v" id="kN">-</div><div class="l">상세정보 조회 완료 / 목록</div></div>
     <div class="card kpi"><div class="v" id="kA">-</div><div class="l">A등급 (우선 방문)</div></div>
-    <div class="card kpi"><div class="v" id="kAvg">-</div><div class="l">평균 잠재지수 (조회 완료 기준)</div></div>
+    <div class="card kpi"><div class="v" id="kAvg">-</div><div class="l">평균 지수 (조회 완료 기준)</div></div>
     <div class="card kpi"><div class="v" id="kTop">-</div><div class="l">A등급 최다 시군구</div></div>
   </div>
 
@@ -342,8 +351,8 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <div class="ml" id="sgguList"><div class="empty">① 의원 목록을 먼저 불러오세요</div></div></div>
       <label>읍면동</label><select id="fEmd"></select>
 
-      <div class="step">③ 질병정보(Top5) 조회</div>
-      <button class="btn pri full" id="btnTop5" disabled>현재 목록 질병정보 조회</button>
+      <div class="step">③ 상세정보 조회 (진료시간·전문의·질병)</div>
+      <button class="btn pri full" id="btnTop5" disabled>현재 목록 상세정보 조회</button>
       <button class="btn full" id="btnStop" style="display:none">중지</button>
       <div class="prog"><i id="prog"></i></div>
       <div class="msg" id="msg">시도를 고르고 ①부터 진행하세요.</div>
@@ -353,7 +362,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <label>등급</label>
       <select id="fGrade"><option value="">전체</option><option>A</option><option>B</option><option>C</option><option value="N">미조회</option></select>
       <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
-      <label class="opt"><input type="checkbox" id="oHide">비대면 적합 질환이 없는 의원 숨기기</label>
+      <label class="opt"><input type="checkbox" id="oHide">비대면 질환이 0개인 의원 숨기기 (질병정보가 있는 의원만 해당)</label>
       <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
 
       <hr>
@@ -369,15 +378,16 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 
       <hr>
       <details>
-        <summary>잠재지수 가중치 <button class="q" data-help="top" title="지표 설명">?</button></summary>
-        <label>비대면 적합도 (Top5 질환 구성)<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="40"><span id="w1v"></span></div>
-        <label>고혈압·당뇨 양호기관<button class="q" data-help="w2" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w2" value="20"><span id="w2v"></span></div>
-        <label>표시과목 (내과·가정의학과)<button class="q" data-help="w3" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w3" value="15"><span id="w3v"></span></div>
-        <label>개원 연수<button class="q" data-help="w4" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w4" value="15"><span id="w4v"></span></div>
-        <label>의사 수<button class="q" data-help="w5" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w5" value="10"><span id="w5v"></span></div>
-        <label>A등급 / B등급 기준점<button class="q" data-help="grade" title="설명 보기">?</button></label>
-        <div class="w" style="grid-template-columns:1fr 1fr"><input type="number" id="tA" value="70"><input type="number" id="tB" value="50"></div>
-        <div class="note">가중치는 합계 100으로 자동 환산됩니다.</div>
+        <summary>지수 가중치 <button class="q" data-help="top" title="지표 설명">?</button></summary>
+        <label>① 진료 접근성 (야간·주말)<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="20"><span id="w1v"></span></div>
+        <label>② 내과·가정의학과 전문의<button class="q" data-help="w2" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w2" value="20"><span id="w2v"></span></div>
+        <label>③ 비대면 질환 구성 (Top5)<button class="q" data-help="w3" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w3" value="20"><span id="w3v"></span></div>
+        <label>④ 고혈압·당뇨 양호기관<button class="q" data-help="w4" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w4" value="15"><span id="w4v"></span></div>
+        <label>⑤ 개원 연수<button class="q" data-help="w5" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w5" value="15"><span id="w5v"></span></div>
+        <label>⑥ 진료 규모 (의사 수)<button class="q" data-help="w6" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w6" value="10"><span id="w6v"></span></div>
+        <label>등급 비율: A 상위 % / B 다음 %<button class="q" data-help="grade" title="설명 보기">?</button></label>
+        <div class="w" style="grid-template-columns:1fr 1fr"><input type="number" id="tA" value="20" min="1" max="90"><input type="number" id="tB" value="30" min="0" max="90"></div>
+        <div class="note">가중치는 자동으로 100점 환산되고, 데이터가 없는 지표는 그 의원 계산에서 빠집니다.</div>
       </details>
       <hr>
       <details id="evalBox">
@@ -394,9 +404,9 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <summary>설정</summary>
         <label>중계 API 주소</label><input type="text" id="apiBase" placeholder="/api/hira">
         <div class="note">이 페이지와 같은 Vercel 프로젝트면 비워두세요.</div>
-        <button class="btn full" id="btnCache">질병정보 캐시 비우기</button>
+        <button class="btn full" id="btnCache">상세정보 캐시 비우기</button>
         <button class="btn full" id="btnSample">샘플 데이터로 미리보기</button>
-        <button class="btn full" id="btnRaw">질병정보 원본 확인 (현재 목록 첫 의원)</button>
+        <button class="btn full" id="btnRaw">API 원본 확인 (현재 목록 첫 의원)</button>
         <pre id="rawOut" style="display:none;white-space:pre-wrap;word-break:break-all;font-size:11px;background:var(--soft);padding:8px;border-radius:8px;max-height:260px;overflow:auto"></pre>
       </details>
       <div style="margin-top:12px"><button class="btn pri full" id="export">현재 목록 CSV 내보내기</button></div>
@@ -412,12 +422,12 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <div class="card" id="secList">
         <div class="sec-title listhd"><span>의원 리스트 <span class="sub" id="cnt"></span> <button class="q" data-help="top" title="지수·등급 설명">?</button></span>
           <select id="mSort" class="mobile-only" aria-label="정렬">
-            <option value="score">지수 높은 순</option><option value="suit">적합도 높은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
+            <option value="score">지수 높은 순</option><option value="hrsScore">야간·주말 진료 순</option><option value="imSdr">내과 전문의 많은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
           </select></div>
         <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
         <div class="tbl"><table id="tbl"><thead><tr>
-          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
-          <th data-k="subject">과목</th><th data-k="suit">적합도</th><th data-k="top5" id="thTop5">비대면 적합 질환</th><th data-k="good">평가양호</th>
+          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
+          <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th><th data-k="good" class="c-ev">평가양호</th>
           <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
         </tr></thead><tbody></tbody></table></div>
         <div class="cards" id="cards"></div>
@@ -516,6 +526,7 @@ const store = {
 };
 let RAW = [], VIEW = [], sortK = "score", sortDir = -1, map, layer, stopFlag = false;
 let T5 = store.get("chronic_t5", {});   // ykiho → {d:[질병], s:표시과목}
+let DET = store.get("chronic_det", {});  // ykiho → {h:{night,sat,sun}|null, im:내과·가정 전문의 수|null}
 
 /* ───────── API ───────── */
 const apiBase = () => ($("apiBase").value.trim() || "/api/hira");
@@ -557,7 +568,7 @@ async function loadBasis(){
 function toRow(it, sub){
   return { ykiho:it.ykiho, name:it.yadmNm||"", sido:it.sidoCdNm||"", sggu:it.sgguCdNm||"", emd:it.emdongNm||"", addr:it.addr||"", tel:it.telno||"",
     subject:guessSubject(it.yadmNm||"", sub), subjEst:true, doctors:+(it.drTotCnt||0), years:yrs(it.estbDd), lat:+(it.YPos||it.yPos||0), lng:+(it.XPos||it.xPos||0),
-    top5:"", looked:false, hp_good:"", dm_good:"" };
+    sdr:+(it.mdeptSdrCnt||0), top5:"", looked:false, hp_good:"", dm_good:"" };
 }
 function guessSubject(name, sub){
   if(/내과/.test(name)) return "내과";
@@ -566,44 +577,68 @@ function guessSubject(name, sub){
   if(m) return m[1];
   return SUBNAME[sub] || "";
 }
-function applyT5(){ RAW.forEach(r=>{ const c = T5[r.ykiho]; if(c){ r.top5 = c.d.join("|"); r.looked = true; if(c.s){ r.subject = c.s; r.subjEst = false; } } }); }
+function applyT5(){ RAW.forEach(r=>{
+  const c = T5[r.ykiho]; if(c){ r.top5 = c.d.join("|"); if(c.s){ r.subject = c.s; r.subjEst = false; } }
+  const d = DET[r.ykiho]; if(d){ r.hrs = d.h; r.im = d.im; }
+  r.looked = !!(c || d);
+}); }
+// 진료시간: "0900", "09:00", 900 등 → 분
+const hm = v => { const s = String(v||"").replace(/[^0-9]/g,""); if(s.length < 3) return null; const n = +s.padStart(4,"0"); return Math.floor(n/100)*60 + n%100; };
+function parseHours(it){
+  if(!it) return null;
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], e = {}, s = {};
+  let any = false;
+  days.forEach(d => { s[d] = hm(it["trmt"+d+"Start"]); e[d] = hm(it["trmt"+d+"End"]); if(s[d] != null || e[d] != null) any = true; });
+  if(!any) return null;
+  const night = days.slice(0,5).filter(d => e[d] != null && e[d] >= 19*60).length;
+  return { night, sat: s.Sat != null && e.Sat != null && e.Sat > s.Sat, sun: s.Sun != null && e.Sun != null && e.Sun > s.Sun,
+           wk: s.Mon != null && e.Mon != null ? `${String(it.trmtMonStart).replace(/(\d\d)(\d\d)$/,"$1:$2")}~${String(it.trmtMonEnd).replace(/(\d\d)(\d\d)$/,"$1:$2")}` : "" };
+}
+function parseSpc(items){
+  if(!items || !items.length) return null;
+  return items.filter(x => ["01","23"].includes(String(x.dgsbjtCd).padStart(2,"0"))).reduce((a,x) => a + (+(x.dtlSdrCnt ?? x.mdeptSdrCnt) || 0), 0);
+}
 
 async function loadTop5(){
   const todo = VIEW.filter(r => !r.looked);
   if(!todo.length){ say("현재 목록은 모두 조회되어 있습니다."); return; }
-  if(todo.length > 1500 && !confirm(`${todo.length.toLocaleString()}곳을 조회합니다. 하루 호출 한도(개발계정 10,000건)를 고려해 시군구로 좁히는 걸 권장합니다. 계속할까요?`)) return;
+  if(todo.length > 1500 && !confirm(`${todo.length.toLocaleString()}곳을 조회합니다. 의원 1곳당 API 3건(진료시간·전문의·질병)을 쓰므로 시군구로 좁히는 걸 권장합니다. 계속할까요?`)) return;
   stopFlag = false; $("btnTop5").disabled = true; $("btnStop").style.display = "block";
   let done = 0, fail = 0, idx = 0, limitHit = false, lastErr = "";
+  const cnt = {h:0, s:0, t:0}, err = {};
+  const one = async (svc, ykiho) => { try{ return await api({svc, ykiho}); }catch(e){ err[svc] = e.message; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; } return null; } };
   const worker = async () => {
     while(idx < todo.length && !stopFlag){
       const r = todo[idx++];
-      try{
-        const j = await api({svc:"top5", ykiho:r.ykiho});
-        const it = j.items[0] || {};
-        const d = [1,2,3,4,5].map(n=>it["mfrnIntrsIlnsNm"+n]).filter(Boolean);
-        T5[r.ykiho] = { d, s: it.shwSbjtNm || "" };
-        r.top5 = d.join("|"); r.looked = true; if(it.shwSbjtNm){ r.subject = it.shwSbjtNm; r.subjEst = false; }
-      }catch(e){ fail++; lastErr = e.message; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; }
-        if(fail >= 8 && done < 12){ stopFlag = true; } }
+      const [jd, js, jt] = await Promise.all([one("dtl", r.ykiho), one("spc", r.ykiho), one("top5", r.ykiho)]);
+      if(!jd && !js && !jt){ fail++; lastErr = Object.values(err).pop() || ""; if(fail >= 8 && done < 12) stopFlag = true; }
+      else {
+        const h = jd ? parseHours(jd.items[0]) : null, im = js ? parseSpc(js.items) : null;
+        DET[r.ykiho] = { h, im }; r.hrs = h; r.im = im; if(h) cnt.h++; if(im != null) cnt.s++;
+        if(jt){ const it = jt.items[0] || {}, d = [1,2,3,4,5].map(n=>it["mfrnIntrsIlnsNm"+n]).filter(Boolean);
+          T5[r.ykiho] = { d, s: it.shwSbjtNm || "" }; r.top5 = d.join("|"); if(d.length) cnt.t++;
+          if(it.shwSbjtNm){ r.subject = it.shwSbjtNm; r.subjEst = false; } }
+        r.looked = true;
+      }
       done++; setProg(done/todo.length*100);
-      if(done % 10 === 0){ say(`질병정보 조회 ${done}/${todo.length}${fail?` (실패 ${fail})`:""}`); store.set("chronic_t5", T5); apply(true); }
+      if(done % 10 === 0){ say(`상세정보 조회 ${done}/${todo.length}${fail?` (실패 ${fail})`:""}`); store.set("chronic_t5", T5); store.set("chronic_det", DET); apply(true); }
     }
   };
-  await Promise.all([worker(),worker(),worker(),worker()]);
-  store.set("chronic_t5", T5);
+  await Promise.all([worker(),worker(),worker()]);
+  store.set("chronic_t5", T5); store.set("chronic_det", DET);
   $("btnTop5").disabled = false; $("btnStop").style.display = "none";
-  if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${done-fail}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
-  else if(fail && done - fail === 0) say(`질병정보 조회가 모두 실패했습니다. 원인: ${lastErr} — data.go.kr에서 '병원진료정보조회서비스' 활용신청이 승인됐는지 확인하세요.`, true);
+  const ok = done - fail;
+  if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${ok}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
+  else if(fail && ok === 0) say(`상세정보 조회가 모두 실패했습니다. 원인: ${lastErr}`, true);
   else {
-    const okRows = todo.filter(r => r.looked), empty = okRows.filter(r => !r.top5).length, zero = okRows.filter(r => r.top5 && !r.top5.split("|").some(isSuit)).length;
-    let m = `조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 · 마지막 오류: ${lastErr}`:""}`;
-    if(okRows.length) m += ` · 질병정보 없음 ${empty}곳, 적합 질환 0개 ${zero}곳, 적합 질환 1개 이상 ${okRows.length-empty-zero}곳`;
-    if(okRows.length >= 5 && empty / okRows.length > 0.8) m += " ⚠ 대부분 질병정보가 비어 있습니다. 설정 → '질병정보 원본 확인'으로 응답을 확인해 주세요.";
-    else if(okRows.length >= 5 && zero / okRows.length > 0.8) m += " ⚠ 대부분 적합 질환이 0개입니다. 비대면 적합 질환 설정 → '조회된 질병명 점검'에서 분류를 확인해 주세요.";
+    let m = `조회 ${stopFlag?"중지":"완료"}: ${ok}곳 · 진료시간 ${cnt.h}곳, 과목별 전문의 ${cnt.s}곳, 질병정보 ${cnt.t}곳 확보`;
+    if(ok && !cnt.h && err.dtl) m += ` ⚠ 진료시간 API 오류: ${err.dtl} — data.go.kr '의료기관별상세정보서비스' 활용신청을 확인하세요.`;
+    else if(ok && !cnt.h) m += " ⚠ 진료시간 정보가 비어 있습니다.";
+    if(ok && !cnt.t) m += " (질병정보는 오지 않아 해당 지표·열을 숨겼습니다)";
     say(m, !!fail || /⚠/.test(m));
   }
   apply();
-  if(isMobile() && done - fail > 0) $("secList").scrollIntoView({behavior:"smooth"});
+  if(isMobile() && ok > 0) $("secList").scrollIntoView({behavior:"smooth"});
 }
 
 /* ───────── 양호기관 병합 ───────── */
@@ -697,23 +732,47 @@ $("goodClear").onclick = () => { if(confirm("저장된 고혈압·당뇨 평가 
 buildIdx();
 
 /* ───────── 점수 ───────── */
-// 적합도 비율: 만성 1개당 50%, 조건부 1개당 15%(최대 45%), 합계 최대 100%
+// 질환 구성 비율: 만성 1개당 50%, 조건부 1개당 15%(최대 45%), 합계 최대 100%
 const suitRatio = (core, cond) => Math.min(1, .5*core + Math.min(.45, .15*cond));
-function W(){ const w=[1,2,3,4,5].map(i=>+$("w"+i).value); if(typeof evalLoaded==="function" && !evalLoaded()) w[1]=0; const t=w.reduce((a,b)=>a+b,0)||1; return w.map(x=>x/t*100); }
+const NW = 6;
+function W(){ const w=[...Array(NW)].map((_,i)=>+$("w"+(i+1)).value); const t=w.reduce((a,b)=>a+b,0)||1; return w.map(x=>x/t*100); }
+function rawW(){ return [...Array(NW)].map((_,i)=>+$("w"+(i+1)).value); }
 function score(rows){
-  const [w1,w2,w3,w4,w5] = W(), tA=+$("tA").value, tB=+$("tB").value;
+  const w = rawW(), ev = evalLoaded();
   rows.forEach(r=>{
     const t5 = (r.top5||"").split("|").filter(Boolean);
     r.coreN = t5.filter(d => tierOf(d) === "core").length; r.condN = t5.filter(d => tierOf(d) === "cond").length;
-    r.chronicN = r.looked ? r.coreN + r.condN : "";
-    r.suit = r.looked ? Math.round(suitRatio(r.coreN, r.condN) * 100) : "";
+    r.chronicN = r.looked && t5.length ? r.coreN + r.condN : "";
+    r.noData = r.looked && !t5.length;
+    r.suit = r.looked && t5.length ? Math.round(suitRatio(r.coreN, r.condN) * 100) : "";
     const good = (r.hp_good==="Y"?1:0)+(r.dm_good==="Y"?1:0); r.good = good;
-    const subS = /내과|가정의학/.test(r.subject) ? 1 : /일반의/.test(r.subject) ? .7 : .2;
-    const y = Math.min((+r.years||0)/10,1), d = Math.min((+r.doctors||0)/3,1);
-    r.noData = r.looked && !t5.length;   // 질병정보가 비어서 온 의원: 부적합이 아니라 '정보 없음'
-    const base = w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d;
-    r.score = r.noData ? Math.round(base * 100 / Math.max(1, 100 - w1)) : Math.round(w1*suitRatio(r.coreN, r.condN) + base);
-    r.grade = !r.looked ? "N" : r.score>=tA ? "A" : r.score>=tB ? "B" : "C";
+    // 각 지표 0~1, 데이터 없으면 null(계산에서 제외)
+    const h = r.hrs;
+    const x1 = h ? Math.min(.4, .08*h.night) + (h.sat?.35:0) + (h.sun?.25:0) : null;
+    r.hrsScore = x1 == null ? -1 : Math.round(x1*100);
+    let im = r.im; if(im != null && r.doctors > 0) im = Math.min(im, r.doctors);
+    if(im == null){ im = /내과|가정의학/.test(r.subject) && r.sdr > 0 ? Math.min(r.sdr, 3) : null; }
+    r.imSdr = im == null ? -1 : im;
+    const x2 = im == null ? (/내과|가정의학/.test(r.subject) ? .3 : /일반의/.test(r.subject) ? .15 : .05) : [0,.6,.85,1][Math.min(im,3)];
+    const x3 = t5.length ? suitRatio(r.coreN, r.condN) : null;
+    const x4 = ev ? (good===2?1:good===1?.6:0) : null;
+    const x5 = Math.min(1, (+r.years||0)/25);
+    const x6 = Math.min(1, Math.log2(1 + (+r.doctors||0)) / Math.log2(5));
+    const xs = [x1,x2,x3,x4,x5,x6];
+    let s = 0, tw = 0; xs.forEach((x,i) => { if(x != null && w[i] > 0){ s += w[i]*x; tw += w[i]; } });
+    r.score = tw ? Math.round(s / tw * 1000) / 10 : 0;
+  });
+}
+// 지역 안 순위로 등급: 상위 tA% = A, 다음 tB% = B
+function grade(pool){
+  const tA = Math.max(1, +$("tA").value||20) / 100, tB = Math.max(0, +$("tB").value||30) / 100;
+  RAW.forEach(r => { r.grade = "N"; r.pct = ""; });
+  const L = pool.filter(r => r.looked).sort((a,b) => b.score - a.score), n = L.length;
+  L.forEach((r,i) => {
+    const rank = L.findIndex(x => x.score === r.score);   // 동점은 같은 순위
+    const p = (rank + 1) / n;
+    r.pct = Math.max(1, Math.round(p * 100));
+    r.grade = p <= tA ? "A" : p <= tA + tB ? "B" : "C";
   });
 }
 
@@ -748,8 +807,10 @@ function resetFilters(){ SEL.clear(); ["fEmd","fSub","fGrade"].forEach(id=>$(id)
 function apply(light){
   score(RAW);
   const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
-  VIEW = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0));
-  VIEW.sort((a,b)=>{ if(sortK==="score"&&a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
+  const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub));
+  grade(pool);
+  VIEW = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0));
+  VIEW.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
   render(light);
 }
@@ -757,7 +818,10 @@ function apply(light){
 /* ───────── 렌더 ───────── */
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipHtml = (r, only) => r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d => !only || isSuit(d)).map(d => { const t = tierOf(d); return `<span class="chip ${t==="core"?"hit":t==="cond"?"cond":t==="unk"?"unk":"off"}" title="${TIER_NAME[t]}">${esc(d)}</span>`; }).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"질병정보 없음 (과목·개원·의사 수로만 평가)"}</span>`) : '<span class="sub">미조회</span>';
-const suitTxt = r => r.noData ? "정보 없음" : r.looked ? `${r.coreN?`만성 ${r.coreN}`:""}${r.coreN&&r.condN?" · ":""}${r.condN?`조건부 ${r.condN}`:""}` || "0" : "";
+const hrsHtml = r => { const h = r.hrs; if(!h) return '<span class="sub">-</span>';
+  return `<span class="hb ${h.night?"on":""}">야간${h.night>1?" "+h.night:""}</span><span class="hb ${h.sat?"on":""}">토</span><span class="hb ${h.sun?"on":""}">일</span>`; };
+const sdrTxt = r => r.imSdr < 0 ? "-" : `${r.imSdr}명${r.im == null ? '<span class="est">추정</span>' : ""}`;
+const suitTxt = r => r.noData ? "-" : r.looked ? `${r.coreN?`만성 ${r.coreN}`:""}${r.coreN&&r.condN?" · ":""}${r.condN?`조건부 ${r.condN}`:""}` || "0" : "";
 function render(light){
   const L2 = VIEW.filter(r=>r.looked), a = L2.filter(r=>r.grade==="A").length;
   $("kN").textContent = `${L2.length.toLocaleString()} / ${VIEW.length.toLocaleString()}`;
@@ -772,16 +836,16 @@ function render(light){
     <span class="sub">${v.n}곳 · A ${v.A}</span></div>`).join("") || `<div class="sub">데이터 없음</div>`;
   document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ SEL = new Set([el.dataset.s]); $("fEmd").value=""; renderSggu(); sgguChanged(); });
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
-  $("btnTop5").textContent = `현재 목록 질병정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
+  $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
-    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
-    <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${suitTxt(r)}</td>
-    <td>${chipHtml(r, $("oOnly").checked)}</td>
-    <td>${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
-  const L3 = VIEW.filter(r => r.looked), nd = L3.filter(r => r.noData).length, z = L3.filter(r => !r.noData && !r.chronicN).length;
-  const dw = $("dataWarn");
-  if(L3.length >= 5 && nd / L3.length > 0.5){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 중 <b>${nd}곳은 심평원이 질병정보를 비워서 보냈습니다.</b> 점수 문제가 아니라 데이터가 안 온 것이라, 이 의원들은 과목·개원 연수·의사 수로만 평가했습니다. 왼쪽 설정 → <b>질병정보 원본 확인</b> 결과를 확인해 주세요.`; }
-  else if(L3.length >= 5 && z / L3.length > 0.8){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 대부분이 적합 질환 0개입니다. <b>비대면 적합 질환 설정 → 조회된 질병명 점검</b>에서 질병명이 '미분류'로 빠지고 있지 않은지 확인해 주세요.`; }
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
+    <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
+    <td class="c-ev">${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
+  const L3 = VIEW.filter(r => r.looked), hasT5 = L3.some(r => !r.noData);
+  $("tbl").classList.toggle("no-t5", !hasT5); $("tbl").classList.toggle("no-ev", !evalLoaded());
+  const dw = $("dataWarn"), nh = L3.filter(r => !r.hrs).length;
+  if(L3.length >= 5 && nh / L3.length > 0.8){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 중 ${nh}곳의 <b>진료시간 정보가 없습니다.</b> data.go.kr에서 <b>'의료기관별상세정보서비스'</b> 활용신청이 됐는지, 설정 → API 원본 확인 결과를 확인해 주세요.`; }
   else dw.style.display = "none";
   if(isMobile()) renderCards(); else $("cards").innerHTML = "";
   if(!light){ drawMap(); renderDz(); evalStatus(); }
@@ -797,9 +861,10 @@ function renderCards(){
     const tel = (r.tel||"").replace(/[^0-9]/g,"");
     return `<div class="ccard g${r.grade}">
       <div class="t1"><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span><span class="nm">${esc(r.name)}</span><span class="sc">${r.looked?r.score:""}</span></div>
-      <div class="t2">${esc(r.sggu)} ${esc(r.emd)} · ${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}${r.looked?` · ${suitTxt(r)==="0"?"적합 질환 없음":suitTxt(r)}`:""}</div>
-      <div class="t3">${chips}</div>
-      <div class="t4">${good?`<span>평가양호 <b>${good}</b></span>`:""}<span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span></div>
+      <div class="t2">${esc(r.sggu)} ${esc(r.emd)} · ${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}${r.pct?` · 상위 ${r.pct}%`:""}</div>
+      ${r.looked ? `<div class="t3">${hrsHtml(r)}${r.imSdr>=0?`<span class="hb">전문의 ${r.imSdr}명</span>`:""}</div>` : '<div class="t3"><span class="sub">상세정보 미조회</span></div>'}
+      ${r.looked && !r.noData ? `<div class="t3">${chips}</div>` : ""}
+      <div class="t4">${good?`<span>평가양호 <b>${good}</b></span>`:""}<span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span>${r.hrs?.wk?`<span>평일 ${esc(r.hrs.wk)}</span>`:""}</div>
       <div class="act">${tel?`<a href="tel:${tel}">📞 전화</a>`:""}${r.lat&&r.lng?`<button type="button" data-go="${esc(r.ykiho)}">📍 지도</button>`:""}</div>
     </div>`;
   }).join("") + (VIEW.length > CARD_N ? `<button class="btn more-btn" id="moreCards">더 보기 (${(VIEW.length-CARD_N).toLocaleString()}곳 남음)</button>` : "") || '<div class="note">표시할 의원이 없습니다.</div>';
@@ -820,7 +885,7 @@ function drawMap(){
   const pts = VIEW.filter(r=>r.lat&&r.lng).slice(0,3000);
   MARK = {};
   layer = L.layerGroup(pts.map(r=>MARK[r.ykiho]=L.circleMarker([r.lat,r.lng],{radius:r.grade==="A"?7:5,color:col[r.grade],fillColor:col[r.grade],fillOpacity:r.grade==="N"?.35:.8,weight:1})
-    .bindPopup(`<b>${esc(r.name)}</b><br>${r.grade==="N"?"질병정보 미조회":`${r.grade}등급 · 지수 ${r.score}`}<br>${esc(r.subject)} · ${esc((r.top5||"").replace(/\|/g,", "))}<br>${esc(r.tel)}`))).addTo(map);
+    .bindPopup(`<b>${esc(r.name)}</b><br>${r.grade==="N"?"상세정보 미조회":`${r.grade}등급 · 지수 ${r.score} · 상위 ${r.pct}%`}<br>${esc(r.subject)}${r.hrs?` · ${r.hrs.night?"야간 ":""}${r.hrs.sat?"토 ":""}${r.hrs.sun?"일 ":""}진료`:""}<br>${esc(r.tel)}`))).addTo(map);
   if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView([36.5,127.8],7);
 }
 function say(t, err){ $("msg").textContent = t; $("msg").className = "msg" + (err?" err":""); }
@@ -835,7 +900,8 @@ function sample(){
     const sub = subs[Math.floor(rnd()*subs.length)], t = new Set();
     while(t.size<5) t.add(rnd()<(sub==="일반의"?.2:.55) ? pool[Math.floor(rnd()*4)] : pool[Math.floor(rnd()*pool.length)]);
     out.push({ykiho:`S${ai}${i}`,name:`샘플${sub}의원 ${ai+1}-${String(i+1).padStart(2,"0")}`,sido,sggu,emd:emds[Math.floor(rnd()*emds.length)],addr:`${sido} ${sggu} (샘플)`,tel:"",
-      subject:sub,doctors:1+Math.floor(rnd()*3),years:+(rnd()*25).toFixed(1),top5:[...t].join("|"),looked:i%6!==0,hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
+      subject:sub,doctors:1+Math.floor(rnd()*3),years:+(rnd()*25).toFixed(1),top5:[...t].join("|"),looked:i%6!==0,sdr:1,
+      hrs:{night:rnd()<.4?Math.ceil(rnd()*5):0,sat:rnd()<.7,sun:rnd()<.15,wk:"09:00~18:30"},im:sub==="일반의"?0:Math.floor(rnd()*3),hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
   }});
   return out.map(r=>r.looked?r:{...r,top5:""});
 }
@@ -854,20 +920,24 @@ $("btnRaw").onclick = async () => {
   if(!r){ out.textContent = "먼저 의원 목록을 불러오세요."; return; }
   out.textContent = `${r.name} 조회 중…`;
   try{
-    const res = await fetch(apiBase() + "?" + new URLSearchParams({svc:"top5", ykiho:r.ykiho}));
-    out.textContent = `${r.name} (HTTP ${res.status})\n` + JSON.stringify(await res.json(), null, 1);
+    let txt = r.name + "\n";
+    for(const svc of ["dtl","spc","top5"]){
+      const res = await fetch(apiBase() + "?" + new URLSearchParams({svc, ykiho:r.ykiho}));
+      txt += `\n[${svc}] HTTP ${res.status}\n` + JSON.stringify(await res.json(), null, 1).slice(0, 1500) + "\n";
+    }
+    out.textContent = txt;
   }catch(e){ out.textContent = "오류: " + e.message; }
 };
-$("btnCache").onclick = () => { if(confirm("저장된 질병정보 캐시를 지울까요?")){ T5 = {}; store.set("chronic_t5", T5); RAW.forEach(r=>{r.looked=false;r.top5="";}); apply(); } };
+$("btnCache").onclick = () => { if(confirm("저장된 상세정보(진료시간·전문의·질병) 캐시를 지울까요?")){ T5 = {}; DET = {}; store.set("chronic_t5", T5); store.set("chronic_det", DET); RAW.forEach(r=>{r.looked=false;r.top5="";r.hrs=null;r.im=null;}); apply(); } };
 $("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--acc)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
 $("export").onclick = () => {
-  const cols = ["grade","score","name","sido","sggu","emd","subject","suit","coreN","condN","top5","hp_good","dm_good","years","doctors","tel","addr"];
+  const cols = ["grade","score","pct","name","sido","sggu","emd","subject","imSdr","hrsScore","suit","coreN","condN","top5","hp_good","dm_good","years","doctors","tel","addr"];
   const csv = "﻿" + [cols.join(",")].concat(VIEW.map(r=>cols.map(c=>`"${String(c==="grade"&&r.grade==="N"?"미조회":r[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = "chronic_targets.csv"; a.click();
 };
-function showW(){ const w=W(); [1,2,3,4,5].forEach(i=>$("w"+i+"v").textContent=Math.round(w[i-1])); }
-["w1","w2","w3","w4","w5"].forEach(id=>$(id).oninput=()=>{showW();apply(true);});
-["w1","w2","w3","w4","w5"].forEach(id=>$(id).onchange=()=>apply());
+function showW(){ const w=W(); w.forEach((x,i)=>$("w"+(i+1)+"v").textContent=Math.round(x)); }
+["w1","w2","w3","w4","w5","w6"].forEach(id=>$(id).oninput=()=>{showW();apply(true);});
+["w1","w2","w3","w4","w5","w6"].forEach(id=>$(id).onchange=()=>apply());
 [$("tA"),$("tB"),$("fGrade"),$("fSub"),$("fEmd")].forEach(el=>el.onchange=()=>apply());
 $("fQ").oninput = () => { CARD_N = 50; apply(true); };
 $("mSort").onchange = () => { sortK = $("mSort").value; sortDir = sortK==="name"||sortK==="sggu" ? 1 : -1; CARD_N = 50; apply(true); };
