@@ -1,13 +1,14 @@
-// api/hira.js  —  Vercel Edge Function (심평원 Open API 중계)
+// api/hira.js  —  Vercel Function (Node.js) · 심평원 Open API 중계
 // 인증키는 Vercel 환경변수 DATA_GO_KR_KEY 에만 저장되고 브라우저에는 노출되지 않습니다.
+// ※ 공공데이터 API는 해외 IP를 차단할 수 있으므로
+//    Vercel → Settings → Functions → Function Region 을 "Seoul (icn1)" 로 지정하세요.
+//
 // 호출 예) /api/hira?svc=basis&sidoCd=110000&dgsbjtCd=01&pageNo=1
 //         /api/hira?svc=top5&ykiho=...
-// 심평원이 API 버전을 올려 주소가 바뀌면, 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
-//   BASIS_URL = 병원정보서비스 병원기본목록 요청주소 (End Point + /오퍼레이션명)
+//         /api/hira?svc=ping   → 실행 지역·사용 주소 확인 (진단용)
+// API 주소가 바뀌면 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
+//   BASIS_URL = 병원정보서비스 병원기본목록 요청주소
 //   TOP5_URL  = 병원진료정보조회서비스 의원진료상위질병5개 요청주소
-// 진단용: /api/hira?svc=ping  → 현재 사용 중인 주소 확인
-
-export const config = { runtime: "edge", regions: ["icn1"] }; // 서울 리전에서 호출
 
 const SERVICES = {
   basis: {
@@ -51,24 +52,31 @@ function parseXml(xml) {
   };
 }
 
-export default async function handler(req) {
+const json = (obj, status, headers) => new Response(JSON.stringify(obj), { status, headers });
+
+export function OPTIONS(req) {
+  return new Response(null, { status: 204, headers: cors(req.headers.get("origin") || "") });
+}
+
+export async function GET(req) {
   const origin = req.headers.get("origin") || "";
   const headers = { ...cors(origin), "Content-Type": "application/json; charset=utf-8" };
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
-
   const q = new URL(req.url).searchParams;
+
   if (q.get("svc") === "ping") {
-    return new Response(JSON.stringify({
+    return json({
+      region: process.env.VERCEL_REGION || "unknown", // icn1 이면 서울
       keySet: !!process.env.DATA_GO_KR_KEY,
       basis: SERVICES.basis.url,
       top5: SERVICES.top5.url,
-    }), { status: 200, headers });
+    }, 200, headers);
   }
+
   const svc = SERVICES[q.get("svc")];
-  if (!svc) return new Response(JSON.stringify({ error: "svc는 basis 또는 top5" }), { status: 400, headers });
+  if (!svc) return json({ error: "svc는 basis, top5, ping 중 하나" }, 400, headers);
 
   let key = process.env.DATA_GO_KR_KEY || "";
-  if (!key) return new Response(JSON.stringify({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }), { status: 500, headers });
+  if (!key) return json({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }, 500, headers);
   if (key.includes("%")) key = decodeURIComponent(key); // Encoding 키를 넣어도 동작하도록
 
   const up = new URL(svc.url);
@@ -82,4 +90,17 @@ export default async function handler(req) {
     const body = await r.text();
     const data = parseXml(body);
     const ok = r.ok && (!data.resultCode || data.resultCode === "00" || data.resultCode === "0000");
- 
+    if (!ok) {
+      return json({
+        error: data.resultMsg || `HTTP ${r.status}`, code: data.resultCode,
+        region: process.env.VERCEL_REGION || "unknown", url: svc.url, raw: body.slice(0, 300),
+      }, 502, headers);
+    }
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { ...headers, "Cache-Control": `public, s-maxage=${svc.ttl}, stale-while-revalidate=86400` },
+    });
+  } catch (e) {
+    return json({ error: String(e), region: process.env.VERCEL_REGION || "unknown" }, 502, headers);
+  }
+}
