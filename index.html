@@ -2,784 +2,856 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>터치 방문결과 입력</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>만성질환 재진 타겟맵</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("chronic_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* Layout: phone-width app column (keyboard-free tap flow) + desktop side panel explaining the flow */
-:root{
-  /* 화이트 바탕 · 짙은 녹색/그레이 메인 · 짙은 오렌지 포인트 */
-  --bg:#ffffff; --surface:#ffffff; --surface2:#f3f4f3; --ink:#1d2621; --muted:#6c7570; --line:#d8dcda;
-  --accent:#1e4d34; --accent-ink:#ffffff; --accent-soft:#e4eee8;
-  --done:#2b6e47; --done-soft:#e6f1ea;
-  --point:#c4531a; --point-ink:#ffffff; --point-soft:#fcebe1;
-  --warn:#c4531a; --warn-soft:#fcebe1;
-  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  color-scheme:light;
-}
+/* 낮: 화이트 바탕 · 짙은 녹색/짙은 그레이 메인 · 주황 포인트 */
+:root,:root[data-theme="light"]{
+  --bg:#ffffff;--card:#ffffff;--soft:#f1f6f3;--soft2:#e3ede7;
+  --ink:#262d29;--sub:#5d6862;--line:#d3ddd7;--line2:#a9bdb1;
+  --pri:#1e5a3d;--pri2:#2f7a54;--prit:#ffffff;--btn:#1e5a3d;--btnh:#2f7a54;
+  --head:#1e5a3d;--headt:#ffffff;
+  --acc:#e8701a;--acc-soft:#fdeedf;
+  --a:#e8701a;--b:#4f8a69;--c:#a2ada7;--nbar:#e3ede7;--err:#c0392b;
+  --shadow:0 1px 2px rgba(30,90,61,.06)}
+/* 밤: 같은 계열을 어둡게 */
+:root[data-theme="dark"]{
+  --bg:#111513;--card:#181e1b;--soft:#1e2622;--soft2:#26302b;
+  --ink:#e4ebe7;--sub:#9aa9a1;--line:#2b3631;--line2:#3d4b44;
+  --pri:#5cbf8c;--pri2:#74cf9f;--prit:#ffffff;--btn:#2b7350;--btnh:#348a60;
+  --head:#1f3b2d;--headt:#e4ebe7;
+  --acc:#ff8a3d;--acc-soft:#3a2617;
+  --a:#ff8a3d;--b:#56a77d;--c:#5f6b65;--nbar:#26302b;--err:#ff7b6b;
+  --shadow:none}
 *{box-sizing:border-box}
-html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
-button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.wrap{display:flex;gap:28px;justify-content:center;align-items:flex-start;max-width:1040px;margin:0 auto}
-.app{width:100%;max-width:430px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 24px rgba(30,77,52,.08);border-radius:22px;overflow:hidden;
-  display:flex;flex-direction:column;height:min(860px,calc(100vh - 32px));min-height:600px;position:relative}
-.top{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
-.toprow{display:flex;align-items:center;gap:10px}
-.back{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);display:grid;place-items:center;font-size:18px}
-.ttl{font-weight:700;font-size:18px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.taps{font-family:var(--f-mono);font-size:12px;background:var(--point-soft);color:var(--point);padding:5px 9px;border-radius:999px;border:0}
-.steps{display:flex;gap:4px}
-.steps span{flex:1;height:4px;border-radius:2px;background:var(--line)}
-.steps span.on{background:var(--accent)}
-.steps span.on:last-of-type{background:var(--point)}
-.crumb{display:flex;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted);min-height:22px;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);font-size:13px;color:var(--ink)}
-button.chip{cursor:pointer}
-.chip.acc{background:var(--accent-soft);border-color:transparent;color:var(--accent);font-weight:600}
-.body>*{flex-shrink:0}
-.body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
-.foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;gap:8px;background:var(--surface)}
-.btn{flex:1;min-height:52px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-weight:600;font-size:16px}
-.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.btn:disabled{opacity:.4;cursor:default}
-.lbl{font-size:12px;letter-spacing:.06em;color:var(--muted);font-weight:600}
-.q{font-size:20px;font-weight:700;text-wrap:balance}
-/* home */
-.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.day{border:1px solid var(--line);background:var(--surface2);border-radius:12px;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
-.day small{font-size:11px;color:var(--muted)}
-.day b{font-size:16px;font-variant-numeric:tabular-nums}
-.day.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.day.on small{color:inherit;opacity:.8}
-.add{min-height:64px;border-radius:16px;border:0;background:var(--point);color:var(--point-ink);font-weight:700;font-size:17px}
-.hosp{border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.hosp h3{margin:0;font-size:15px;padding:10px 14px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center}
-.hosp h3 small{font-weight:500;color:var(--muted);font-size:12px}
-.vline{display:flex;align-items:stretch;border-top:1px solid var(--line);background:var(--surface)}
-.vrow{display:flex;align-items:center;gap:10px;flex:1;min-width:0;text-align:left;padding:12px 6px 12px 14px;border:0;background:transparent}
-.vdel{flex:none;width:52px;border:0;border-left:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;font-weight:600}
-.vdel:hover{color:var(--point)}
-.delbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--point-soft);border-top:1px solid var(--line);font-size:14px;font-weight:600;color:var(--point)}
-.delbar span{flex:1;min-width:0}
-.delbar button{border-radius:10px;padding:9px 14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-.delbar button.danger{background:var(--point);border-color:var(--point);color:var(--point-ink)}
-.delall{align-self:flex-end;border:0;background:transparent;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;padding:2px 0}
-.vrow .nm{font-weight:600;min-width:0}
-.vrow .sub{font-size:12px;color:var(--muted);display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
-.vrow .grow{flex:1;min-width:0}
-.st{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap}
-.st.todo{background:var(--warn-soft);color:var(--warn)}
-.st.ok{background:var(--done-soft);color:var(--done)}
-.grade{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent);flex:none}
-.empty{color:var(--muted);text-align:center;padding:28px 10px;border:1px dashed var(--line);border-radius:16px}
-/* pickers */
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:3px}
-.seg button{border:0;background:transparent;border-radius:9px;min-height:40px;font-weight:600;color:var(--muted)}
-.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-.grid{display:grid;gap:8px}
-.g4{grid-template-columns:repeat(4,1fr)}
-.g3{grid-template-columns:repeat(3,1fr)}
-.g2{grid-template-columns:repeat(2,1fr)}
-.key{position:relative;min-height:68px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-size:26px;font-weight:700}
-.key small{position:absolute;top:6px;right:8px;font-size:11px;font-weight:600;color:var(--point);font-family:var(--f-mono)}
-.key:disabled{opacity:.28;cursor:default}
-.tile{min-height:60px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-weight:600;font-size:15px;padding:10px 8px;line-height:1.3;text-wrap:balance}
-.tile.on{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.tile .s{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px}
-.tile.on .s{color:inherit;opacity:.8}
-.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:60px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface2);font-size:16px;font-weight:600}
-.row .s{font-size:12px;color:var(--muted);font-weight:500}
-.row .grow{flex:1;min-width:0}
-.row mark{background:var(--point-soft);color:var(--point);border-radius:4px;padding:0 2px}
-.doc{position:relative;text-align:left;min-height:84px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface2);padding:10px 12px;display:flex;flex-direction:column;gap:4px}
-.doc .nm{font-weight:700;font-size:16px;display:flex;gap:6px;align-items:center}
-.doc .s{font-size:12px;color:var(--muted)}
-.doc .ck{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;color:transparent}
-.doc.on{border-color:var(--accent);background:var(--accent-soft)}
-.doc.on .ck{background:var(--point);border-color:var(--point)!important;border-color:var(--accent);color:var(--accent-ink)}
-.code{font-family:var(--f-mono);font-size:11px}
-.quick{width:100%;text-align:left;border-radius:16px;border:1.5px solid var(--done);background:var(--done-soft);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
-.quick b{color:var(--done);font-size:14px}
-.quick .chips{display:flex;gap:4px;flex-wrap:wrap}
-.who{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.who .chip{white-space:nowrap}
-.who .chip.done{background:var(--done-soft);color:var(--done);border-color:transparent}
-.card{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface2)}
-.toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;transition:opacity .2s}
-/* side panel */
-.side{flex:1;max-width:520px;display:flex;flex-direction:column;gap:14px;padding-top:6px}
-.side h1{margin:0;font-size:24px;text-wrap:balance}
-.side p{margin:0;color:var(--muted);line-height:1.6;max-width:62ch}
-.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.flow li{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
-.flow li.on{border-color:var(--accent);background:var(--accent-soft)}
-.flow .n{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:13px}
-.flow li.on .n{background:var(--accent);color:var(--accent-ink);border-color:transparent}
-.flow b{display:block;margin-bottom:3px}
-.flow span{color:var(--muted);font-size:13px;line-height:1.5}
-.note{font-size:12px;color:var(--muted)}
-.reset{align-self:flex-start;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;font-weight:600}
-@media (max-width:900px){.side{display:none}.app{height:calc(100vh - 32px);border-radius:18px}}
-/* 모바일: 화면 꽉 차게 */
-@media (max-width:520px){
-  body{padding:0}
-  .wrap{display:block}
-  .app{max-width:none;height:100%;min-height:0;border:0;border-radius:0;box-shadow:none}
-  .top,.body,.foot{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-  .toast{bottom:260px}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
+header{padding:18px 16px 8px;max-width:1280px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--sub);font-size:13px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+h1{color:var(--pri)}
+.kpi{border-top:3px solid var(--pri)}
+.kpi:nth-child(2){border-top-color:var(--acc)}
+.kpi:nth-child(2) .v{color:var(--acc)}
+.kpi .v{color:var(--pri)}
+.sec-title{color:var(--pri)}
+.step{color:var(--pri)}
+.btn.pri:hover:not(:disabled){background:var(--btnh);border-color:var(--btnh)}
+.btn:hover:not(:disabled){border-color:var(--line2)}
+select:focus,input[type=text]:focus,input[type=number]:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
+input[type=range],input[type=checkbox]{accent-color:var(--acc)}
+tbody tr:nth-child(even){background:var(--soft)}
+tbody tr:hover{background:var(--acc-soft)}
+.multi{border:1px solid var(--line2);border-radius:8px;background:var(--card)}
+.multi .mh{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px}
+.multi .mh b{color:var(--acc);font-weight:700}
+.multi .mh button{background:none;border:0;color:var(--pri);font:inherit;font-size:12px;cursor:pointer;padding:0 2px}
+.multi .mh button:hover{color:var(--acc)}
+.multi .ml{max-height:190px;overflow:auto;padding:4px 6px;display:grid;grid-template-columns:1fr 1fr;gap:0 6px}
+.multi .ml label{display:flex;gap:5px;align-items:center;margin:0;padding:3px 2px;font-size:12.5px;color:var(--ink);cursor:pointer}
+.multi .ml label span{color:var(--sub);font-size:11px;margin-left:auto}
+.multi .empty{grid-column:1/-1;color:var(--sub);font-size:12px;padding:6px 2px}
+.tele .grp{font-size:12px;font-weight:700;color:var(--pri);margin:10px 0 2px}
+.tele .grp.x{color:var(--sub)}
+.side .tele label{display:grid;grid-template-columns:auto 1fr;gap:2px 6px;align-items:start;margin:4px 0;color:var(--ink);font-size:12.5px;cursor:pointer}
+.side .tele label small{grid-column:2;color:var(--sub);font-size:11px;line-height:1.35}
+.side .opt{display:flex;gap:6px;align-items:center;font-size:12.5px;margin:6px 0;color:var(--ink);cursor:pointer}
+.chip.off{opacity:.45}
+.dz{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;font-size:12px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.dz .st{font-size:11px;font-weight:700}
+.dz .st.y{color:var(--pri2)} .dz .st.n{color:var(--sub)} .dz .st.u{color:var(--acc)}
+.est{color:var(--sub);font-size:10.5px;margin-left:3px}
+.evalstat{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--soft)}
+.evalstat b{color:var(--pri)}
+.theme{position:fixed;right:16px;bottom:16px;z-index:1500;display:flex;background:var(--card);border:1px solid var(--line2);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.theme button{border:0;background:none;color:var(--sub);width:38px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;cursor:pointer}
+.theme button.on{background:var(--btn);color:var(--prit);font-weight:700}
+.theme button:not(.on):hover{color:var(--acc)}
+.row{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(4,1fr);margin:12px 0}
+.kpi .v{font-size:24px;font-weight:700}
+.kpi .l{color:var(--sub);font-size:12px}
+.main{grid-template-columns:310px minmax(0,1fr)}
+.row>*{min-width:0}
+.side label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
+select,input[type=text],input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
+.chk{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.chk label{display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)}
+.w{display:grid;grid-template-columns:1fr 44px;align-items:center;gap:6px}
+.w span{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+.btn{display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
+.btn.pri{background:var(--btn);color:var(--prit);border-color:var(--btn)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.full{width:100%;margin-top:8px}
+.step{font-weight:700;margin:14px 0 2px;font-size:13px}
+.step:first-child{margin-top:0}
+.prog{height:6px;background:var(--soft2);border-radius:4px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.msg{font-size:12px;color:var(--sub);margin-top:6px;min-height:18px}
+.msg.err{color:var(--err)}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+#map{height:360px;border-radius:10px}
+.bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
+.bars .t{height:14px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
+.bars .b:hover span:first-child{color:var(--acc)}
+.bars .t i{display:block;height:100%}
+.tbl{overflow:auto;max-height:520px;border:1px solid var(--line2);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--head);cursor:pointer;color:var(--headt);font-weight:600;border-bottom:2px solid var(--acc)}
+th:hover{text-decoration:underline}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.g{display:inline-block;min-width:22px;text-align:center;border-radius:6px;padding:1px 6px;color:#fff;font-weight:700;font-size:11px}
+.gA{background:var(--a)}.gB{background:var(--b)}.gC{background:var(--c)}.gN{background:var(--soft2);color:var(--sub)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 6px;margin-right:3px;font-size:11px;background:var(--card)}
+.chip.hit{border-color:var(--pri2);color:var(--pri2);background:var(--soft);font-weight:600}
+.note{font-size:12px;color:var(--sub);margin-top:8px}
+.badge{display:inline-block;background:var(--c);color:#fff;border-radius:6px;padding:1px 8px;font-size:12px;margin-left:6px;vertical-align:middle}
+.sec-title{font-weight:700;margin:0 0 8px}
+details summary{cursor:pointer;font-weight:700;font-size:13px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.q{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--sub);color:var(--sub);font-size:10px;font-weight:700;cursor:pointer;margin-left:4px;vertical-align:1px;background:none;padding:0;line-height:1}
+.q:hover{border-color:var(--pri);color:var(--pri)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:24px 12px;z-index:2000;overflow:auto}
+.modal.on{display:flex}
+.mbox{background:var(--card);color:var(--ink);border-radius:14px;max-width:760px;width:100%;padding:20px 20px 8px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.mhead h2{font-size:18px;margin:0}
+.x{background:none;border:0;font-size:22px;cursor:pointer;color:var(--sub);line-height:1}
+.lead{background:var(--soft);border-left:4px solid var(--acc);border-radius:10px;padding:12px 14px;margin:10px 0 14px;font-size:13.5px}
+.help h3{color:var(--pri)}
+.help details{border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:10px 12px}
+.help details[open]{border-color:var(--pri)}
+.help details summary{display:flex;justify-content:space-between;gap:8px;list-style:none}
+.help details summary::-webkit-details-marker{display:none}
+.help .wt{font-weight:600;color:var(--pri);font-size:12px;white-space:nowrap}
+.help dl{display:grid;grid-template-columns:86px 1fr;gap:6px 10px;margin:10px 0 2px;font-size:13px}
+.help dt{color:var(--sub);font-weight:600}
+.help dd{margin:0}
+.help ul{margin:6px 0 4px;padding-left:18px;font-size:13px}
+.help h3{font-size:14px;margin:18px 0 6px}
+.gradebox{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;margin:6px 0}
+.gradebox div{border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+@media (max-width:600px){.help dl{grid-template-columns:1fr}.help dt{margin-top:6px}}
+.mobile-only{display:none}
+.cards{display:none}
+.tabbar{display:none}
+.listhd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ccard{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--card)}
+.ccard.gA{border-left-color:var(--a)}.ccard.gB{border-left-color:var(--b)}.ccard.gN{border-left-color:var(--soft2)}
+.ccard .t1{display:flex;align-items:center;gap:8px}
+.ccard .nm{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ccard .sc{font-size:20px;font-weight:800;color:var(--pri)}
+.ccard.gA .sc{color:var(--acc)}
+.ccard .t2{color:var(--sub);font-size:12.5px;margin:3px 0 6px}
+.ccard .t3{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.ccard .t4{font-size:12px;color:var(--sub);display:flex;flex-wrap:wrap;gap:4px 10px}
+.ccard .t4 b{color:var(--acc);font-weight:700}
+.ccard .act{display:flex;gap:6px;margin-top:8px}
+.ccard .act a,.ccard .act button{flex:1;text-align:center;text-decoration:none;padding:8px 6px;border-radius:8px;border:1px solid var(--line2);background:var(--soft);color:var(--pri);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.more-btn{width:100%;margin-top:6px}
+@media (max-width:700px){
+  header{padding:14px 12px 4px}
+  h1{font-size:18px}
+  .hdr>.btn{display:none}
+  .hdr .sub{font-size:12px}
+  .kpi .l{font-size:11px}
+  .theme{padding:2px}
+  .theme button{width:32px;height:30px}
+  .wrap{padding:0 12px 96px}
+  .card{padding:12px}
+  .kpis{gap:8px;margin:10px 0}
+  .kpi .v{font-size:20px}
+  #map{height:260px}
+  .tbl{display:none}
+  .cards{display:block}
+  .mobile-only{display:block}
+  #mSort{width:auto;font-size:14px;padding:6px 8px}
+  select,input[type=text],input[type=number]{font-size:16px;padding:9px 10px}
+  .btn{min-height:44px}
+  .q{width:22px;height:22px;font-size:12px}
+  .multi .ml{max-height:240px}
+  .multi .ml label{padding:6px 2px;font-size:14px}
+  .side label.opt,.side .tele label{font-size:14px}
+  .bars .b{grid-template-columns:80px 1fr 78px}
+  .modal{padding:0}
+  .mbox{border-radius:0;min-height:100vh;max-width:none;padding:16px 16px 80px}
+  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:1600;background:var(--card);border-top:1px solid var(--line2);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+  .tabbar a{display:flex;flex-direction:column;align-items:center;gap:1px;text-decoration:none;color:var(--pri);font-size:11px;font-weight:600;padding:4px 0}
+  .tabbar a span{font-size:18px;line-height:1.1}
+  .theme{bottom:calc(64px + env(safe-area-inset-bottom));right:12px}
+  #secFilter,#secMap,#secList{scroll-margin-top:8px}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
-[hidden]{display:none!important}
-body{margin:0}
-/* 병원 찾기: 필터 칩 + 하단 초성 자판 */
-.fil{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
-.fil::-webkit-scrollbar{display:none}
-.fil.wrapf{flex-wrap:wrap;overflow:visible}
-.fchip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted)}
-.fchip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.fchip.dep{border-style:dashed}
-.fchip.dep.on{border-style:solid}
-.fsep{flex:none;width:1px;background:var(--line);margin:4px 2px}
-.pchip{border:1.5px solid var(--point);background:var(--point-soft);color:var(--point);border-radius:12px;padding:8px 14px;font-size:16px;font-weight:700;display:inline-flex;gap:6px;align-items:baseline}
-.pchip small{font-size:11px;font-family:var(--f-mono)}
-.row .hc{font-family:var(--f-mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:2px 7px}
-.foot .pad{width:100%;display:flex;flex-direction:column;gap:8px}
-.qline{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 4px}
-.qv{flex:1;font-size:22px;font-weight:700;letter-spacing:.15em;color:var(--accent)}
-.qv .ph{font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted)}
-.qclr{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600}
-.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.pk{min-height:50px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);font-size:22px;font-weight:700;color:var(--ink)}
-.pk:active{background:var(--accent);color:var(--accent-ink)}
-.pk:disabled{opacity:.25;cursor:default}
-.pk.del{font-size:18px;background:var(--point-soft);color:var(--point);border-color:transparent}
-.top-pad{position:sticky;top:-16px;z-index:2;background:var(--surface);margin:-16px -16px 0;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
-
-/* 등록대상 구분 · 상태 표시 */
-.sec{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.sec .lbl b{color:var(--ink);font-size:13px}
-.toggle{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted)}
-.doc.non{border-style:dashed;background:transparent}
-.doc.non .nm{color:var(--muted)}
-.doc .tag{align-self:flex-start;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--line);color:var(--muted)}
-.doc.non:disabled{cursor:not-allowed}
-.banner{font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
-.banner.err{background:var(--warn-soft);color:var(--warn)}
-.field{display:flex;flex-direction:column;gap:6px}
-.field input{font:inherit;font-size:17px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);padding:0 14px}
-.field input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
-.st.draft{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
-.busy{position:absolute;inset:0;background:color-mix(in srgb,var(--surface) 70%,transparent);display:grid;place-items:center;font-weight:700;color:var(--accent)}
+@media (max-width:900px){.main{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr!important}}
 </style>
 </head>
 <body>
+<header class="hdr">
+  <div>
+    <h1>만성질환 재진 타겟맵 <span id="srcBadge" class="badge">데이터 없음</span></h1>
+    <div class="sub">심평원 Open API 실시간 연동 · 비대면 재진 수요가 클 의원을 지역별로 우선순위화</div>
+  </div>
+  <button class="btn" data-help="top">📘 지표 설명 보기</button>
+</header>
 
-<div class="wrap">
-  <div class="app" id="app">
-    <div class="top">
-      <div class="toprow">
-        <button class="back" id="backBtn" data-act="back" aria-label="뒤로">‹</button>
-        <div class="ttl" id="ttl">방문 결과</div>
-        <button class="taps" id="taps" data-nocount data-act="resetTaps" title="탭 수 초기화">탭 0</button>
-      </div>
-      <div class="steps" id="steps"><span></span><span></span><span></span><span></span></div>
-      <div class="crumb" id="crumb"></div>
+<div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="mbox help">
+    <div class="mhead"><h2 id="helpTitle">재진 많은 의원은 어떻게 판단하나요?</h2><button class="x" id="helpClose" aria-label="닫기">×</button></div>
+
+    <div class="lead" id="h-top">
+      공개 데이터에는 의원별 <b>재진 비율</b>이 없습니다. 그래서 이 대시보드는
+      <b>"재진이 많을 수밖에 없는 조건"</b>을 얼마나 갖췄는지로 점수를 매깁니다.<br>
+      한 줄 요약: <b>만성질환 위주 진료 + 꾸준한 관리 이력 + 오래된 동네 내과</b> = 재진 많은 의원
     </div>
-    <div class="body" id="body"><div class="empty">데이터를 불러오는 중입니다…</div></div>
-    <div class="foot" id="foot" hidden></div>
-    <div class="toast" id="toast" hidden></div>
-    <div class="busy" id="busy" hidden>저장 중…</div>
+
+    <h3>잠재지수를 이루는 5가지 지표</h3>
+    <div class="sub" style="font-size:12px">현재 화면의 가중치가 오른쪽에 표시됩니다. 지표명을 누르면 펼쳐집니다.</div>
+
+    <details id="h-w1">
+      <summary><span>① Top5 중 비대면 적합 질환 수 <span class="sub">— 가장 강한 신호</span></span><span class="wt" data-wt="1"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원의 최근 1년 진료량 상위 5개 질병 중 <b>비대면 재진에 적합한 질환</b>(고혈압·당뇨병·이상지질혈증 등)이 몇 개인지. 기준은 아래 '비대면 적합 질환 기준' 참고</dd>
+        <dt>왜 재진인가</dt><dd>만성질환 환자는 보통 1~3개월마다 같은 의원에 와서 약을 이어 받습니다. 상위 질병에 만성질환이 많을수록 환자 구성 자체가 재진 위주입니다.</dd>
+        <dt>점수 계산</dt><dd>적합 질환 개수 ÷ 5 × 가중치 (5개 모두 적합 질환이면 만점)</dd>
+        <dt>데이터</dt><dd>심평원 병원진료정보조회서비스 (의원진료상위질병5개). 질병명이 어떻게 분류됐는지는 왼쪽 '비대면 적합 질환 설정 → 조회된 질병명 점검'에서 하나씩 확인·수정할 수 있습니다.</dd>
+      </dl>
+    </details>
+
+    <details id="h-w2">
+      <summary><span>② 고혈압·당뇨 양호기관</span><span class="wt" data-wt="2"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>심평원 고혈압·당뇨병 적정성평가에서 '양호' 판정을 받았는지</dd>
+        <dt>왜 재진인가</dt><dd>이 평가의 핵심 지표가 <b>방문 지속</b>과 <b>처방 지속</b> 환자 비율입니다. 양호 판정은 환자를 꾸준히 다시 오게 하고 있다는 공식 확인에 가깝습니다.</dd>
+        <dt>점수 계산</dt><dd>두 질환 모두 양호 = 만점, 하나만 양호 = 60%, 없음 = 0</dd>
+        <dt>데이터</dt><dd>심평원 병원평가 검색에서 받은 고혈압·당뇨병 평가 엑셀 (왼쪽 '고혈압·당뇨 평가 결과 반영'에 업로드). <b>평가 파일을 올리지 않으면 이 지표는 점수에서 빠지고</b>, 나머지 지표만으로 100점 환산합니다.</dd>
+      </dl>
+    </details>
+
+    <details id="h-w3">
+      <summary><span>③ 표시과목 (내과·가정의학과)</span><span class="wt" data-wt="3"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원이 내건 진료과목</dd>
+        <dt>왜 재진인가</dt><dd>내과·가정의학과는 만성질환을 지속 관리하는 대표 과목입니다. 이비인후과·정형외과 등은 단기 내원이 많습니다.</dd>
+        <dt>점수 계산</dt><dd>내과·가정의학과 = 만점, 일반의 = 70%, 그 외 = 20%</dd>
+        <dt>데이터</dt><dd>질병정보를 조회하면 심평원이 주는 <b>공식 표시과목</b>으로 확정됩니다. 조회 전에는 기관명(예: "○○내과의원")으로 추정하며, 표에 <span class="est">추정</span>으로 표시됩니다.</dd>
+      </dl>
+    </details>
+
+    <details id="h-w4">
+      <summary><span>④ 개원 연수</span><span class="wt" data-wt="4"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>개설일로부터 지난 기간</dd>
+        <dt>왜 재진인가</dt><dd>오래된 의원일수록 수년째 다니는 단골 환자군이 쌓여 있습니다.</dd>
+        <dt>점수 계산</dt><dd>10년 이상 = 만점, 그 미만은 비례 (예: 5년 = 50%)</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스 (개설일자)</dd>
+      </dl>
+    </details>
+
+    <details id="h-w5">
+      <summary><span>⑤ 의사 수</span><span class="wt" data-wt="5"></span></summary>
+      <dl>
+        <dt>무엇을 보나</dt><dd>의원에 근무하는 의사 수</dd>
+        <dt>왜 재진인가</dt><dd>진료 용량이 클수록 재진 환자를 많이 소화할 수 있습니다.</dd>
+        <dt>점수 계산</dt><dd>3명 이상 = 만점, 그 미만은 비례 (예: 1명 = 33%)</dd>
+        <dt>데이터</dt><dd>심평원 병원정보서비스 (의사 총수)</dd>
+      </dl>
+    </details>
+
+    <h3 id="h-evalhow">고혈압·당뇨 평가 엑셀 받는 방법</h3>
+    <ul>
+      <li>심평원 누리집 <b>병원평가</b> 상세검색 화면에서 평가항목 <b>만성질환</b> → 세부항목 <b>고혈압</b> 선택</li>
+      <li>지역은 비워 두거나(전국) 필요한 시도만 선택 → <b>검색</b></li>
+      <li>조회 결과가 나오면 <b>다운로드(엑셀)</b> 버튼이 활성화됩니다 → 받은 파일을 왼쪽 '고혈압 평가 파일'에 업로드</li>
+      <li>세부항목 <b>당뇨병</b>으로 바꿔 같은 방법으로 받아 '당뇨병 평가 파일'에 업로드</li>
+      <li>앱이 기관명과 주소로 의원을 자동 매칭하고, 매칭 결과(몇 곳 연결됐는지)를 보여줍니다.</li>
+    </ul>
+
+    <h3 id="h-tele">비대면 적합 질환 기준</h3>
+    <ul>
+      <li><b>포함</b>: 증상이 안정적이고 같은 약을 반복 처방하는 <b>만성질환</b>. 개정안상 일반 비대면진료는 6개월 내 같은 증상으로 대면진료를 받은 의료기관에서 하는 것이 원칙이라, 정기 재진 환자가 핵심 대상입니다.</li>
+      <li><b>제외</b>: 개정안에서 비대면 처방이 금지된 <b>마약류·비만치료제</b>가 주로 쓰이는 질환(불면증, 비만, ADHD 등)과 향정신성 약 처방 비중이 높은 질환(불안·공황 등).</li>
+      <li><b>제외</b>: 감기·장염 같은 <b>급성 질환</b>은 비대면 진료 자체는 가능하지만, 초진 처방이 7일 이내로 제한되고 재진으로 이어지지 않아 타겟에서 뺐습니다.</li>
+      <li>복지부가 '오·남용 우려 의약품'을 고시로 추가 지정할 예정이므로, 확정되면 왼쪽 <b>비대면 적합 질환 설정</b>에서 체크를 바꾸면 바로 반영됩니다.</li>
+    </ul>
+
+    <h3 id="h-grade">등급 기준</h3>
+    <div class="gradebox">
+      <div><span class="g gA">A</span> <span id="hgA">70</span>점 이상 · 우선 방문</div>
+      <div><span class="g gB">B</span> <span id="hgB">50</span>점 이상 · 관리 대상</div>
+      <div><span class="g gC">C</span> 그 미만</div>
+      <div><span class="g gN">-</span> 질병정보 미조회</div>
+    </div>
+    <div class="sub" style="font-size:12px">가중치와 기준점은 왼쪽 '잠재지수 가중치'에서 바꿀 수 있고, 합계는 자동으로 100점 만점이 됩니다.</div>
+
+    <h3 id="h-limit">한계 — 꼭 알아두세요</h3>
+    <ul>
+      <li>상위 5개 질병은 <b>순위가 아니라 가나다순</b>으로 제공돼, 고혈압이 1위인지 5위인지는 알 수 없습니다.</li>
+      <li>같은 고혈압 의원이라도 <b>환자 수 규모</b>는 공개되지 않습니다.</li>
+      <li>따라서 이 점수는 "재진이 많을 <b>가능성</b>"을 매긴 <b>추정치</b>이며, 실제 순위와 차이가 있을 수 있습니다.</li>
+    </ul>
+
+    <h3 id="h-improve">정확도를 높이는 방법</h3>
+    <ul>
+      <li><b>MR 현장 확인</b>: A등급 의원 방문 시 만성질환 환자 비중, 비대면 진료 운영 여부를 CRM에 기록 → 몇 달 뒤 점수와 비교해 가중치 조정</li>
+      <li><b>사내 처방 데이터 결합</b>: 의원별 만성질환 약 처방 건수가 있다면 가장 직접적인 재진 지표</li>
+      <li><b>양호기관 목록 반영</b>: 심평원 공개 목록을 병합하면 ② 지표가 채워집니다</li>
+    </ul>
+    <div style="text-align:right;margin:14px 0 10px"><button class="btn pri" id="helpOk">확인</button></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="row kpis">
+    <div class="card kpi"><div class="v" id="kN">-</div><div class="l">대상 의원 (질병정보 조회 완료)</div></div>
+    <div class="card kpi"><div class="v" id="kA">-</div><div class="l">A등급 (우선 방문)</div></div>
+    <div class="card kpi"><div class="v" id="kAvg">-</div><div class="l">평균 잠재지수 (조회 완료 기준)</div></div>
+    <div class="card kpi"><div class="v" id="kTop">-</div><div class="l">A등급 최다 시군구</div></div>
   </div>
 
-  <aside class="side">
-    <h1>키보드 없이 터치로 끝내는 방문결과 입력</h1>
-    <p>병원·선생님·품목·활동유형은 엑셀로 DB에 올린 마스터 데이터에서 불러옵니다. 시연용 선생님은 모두 가상 인물입니다. 같은 병원 안에서 오늘 만난 선생님만 눌러서 등록합니다.</p>
-    <ol class="flow" id="flow">
-      <li data-s="home"><div class="n">1</div><div><b>오늘 방문 목록</b><span>지역·날짜를 고르고 ‘방문 추가’. 활동 미입력 선생님은 빨간 표시.</span></div></li>
-      <li data-s="hosp"><div class="n">2</div><div><b>병원: 초성 자판 먼저</b><span>화면 맨 위 초성 자판으로 시작합니다. 유니내과 → ㅇㄴ 처럼 2~3번이면 몇 곳만 남고, 다음에 올 수 없는 초성은 자동으로 꺼집니다. 동·진료과 칩으로 한 번 더 거르고, 결과가 많으면 ‘서울·서초’ 같은 시작 글자 칩이 나옵니다. 다양한 병원 방문이 목적이라 자주 가는 곳 목록은 두지 않았습니다.</span></div></li>
-      <li data-s="doc"><div class="n">3</div><div><b>오늘 만난 선생님만 누르기</b><span>병원 선생님 1~3명(대학병원은 교수진)이 카드로 나오고, 누른 사람만 등록됩니다. 1명뿐인 의원은 미리 선택되어 있습니다.</span></div></li>
-      <li data-s="act"><div class="n">4</div><div><b>카테고리 → 품목 → 유형1 → 유형2</b><span>누르면 자동으로 다음 단계. DB에 남은 지난 방문 기록으로 ‘지난 방문과 동일’ 한 번에 입력.</span></div></li>
-      <li data-s="review"><div class="n">5</div><div><b>확인 후 한 번에 저장</b><span>방문결과 테이블(crm_visits)에 한 번에 저장됩니다.</span></div></li>
-    </ol>
-    <button class="reset" data-act="resetAll">처음 상태로 되돌리기</button>
-    <p class="note" id="modeNote"></p>
-  </aside>
+  <div class="row main">
+    <aside class="card side" id="secFilter">
+      <div class="step">① 지역·과목 선택 후 의원 목록 불러오기</div>
+      <label>시도</label><select id="aSido"></select>
+      <label>진료과목</label>
+      <div class="chk">
+        <label><input type="checkbox" value="01" checked>내과</label>
+        <label><input type="checkbox" value="23" checked>가정의학과</label>
+        <label><input type="checkbox" value="00" checked>일반의</label>
+      </div>
+      <button class="btn pri full" id="btnBasis">의원 목록 불러오기</button>
+
+      <div class="step">② 시군구·읍면동으로 좁히기</div>
+      <label>시군구 (여러 곳 선택 가능)</label>
+      <div class="multi"><div class="mh"><span id="sgguSum">전체</span><span><button type="button" id="sgguAll">모두 선택</button> · <button type="button" id="sgguNone">해제</button></span></div>
+        <div class="ml" id="sgguList"><div class="empty">① 의원 목록을 먼저 불러오세요</div></div></div>
+      <label>읍면동</label><select id="fEmd"></select>
+
+      <div class="step">③ 질병정보(Top5) 조회</div>
+      <button class="btn pri full" id="btnTop5" disabled>현재 목록 질병정보 조회</button>
+      <button class="btn full" id="btnStop" style="display:none">중지</button>
+      <div class="prog"><i id="prog"></i></div>
+      <div class="msg" id="msg">시도를 고르고 ①부터 진행하세요.</div>
+
+      <hr>
+      <label>표시과목</label><select id="fSub"></select>
+      <label>등급</label>
+      <select id="fGrade"><option value="">전체</option><option>A</option><option>B</option><option>C</option><option value="N">미조회</option></select>
+      <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
+      <label class="opt"><input type="checkbox" id="oHide" checked>비대면 적합 질환이 없는 의원 숨기기</label>
+      <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
+
+      <hr>
+      <details class="tele">
+        <summary>비대면 적합 질환 설정 <button class="q" data-help="tele" title="기준 설명">?</button></summary>
+        <div class="note">체크한 질환만 '비대면 적합 질환'으로 집계·표시합니다.</div>
+        <div id="teleList"></div>
+        <div class="grp" style="margin-top:12px">조회된 질병명 점검</div>
+        <div class="note">실제 조회된 질병명이 어떻게 분류됐는지 보여줍니다. 체크를 바꾸면 그 질병명만 따로 적합/제외로 고정됩니다. <b style="color:var(--acc)">미분류</b>는 기준에 없는 이름이라 확인이 필요합니다.</div>
+        <div id="dzList"><div class="note">질병정보를 조회하면 여기에 나타납니다.</div></div>
+        <button class="btn full" id="teleReset" style="margin-top:8px">기본값으로 (질병명 고정 포함)</button>
+      </details>
+
+      <hr>
+      <details>
+        <summary>잠재지수 가중치 <button class="q" data-help="top" title="지표 설명">?</button></summary>
+        <label>Top5 중 비대면 적합 질환 수<button class="q" data-help="w1" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w1" value="40"><span id="w1v"></span></div>
+        <label>고혈압·당뇨 양호기관<button class="q" data-help="w2" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w2" value="20"><span id="w2v"></span></div>
+        <label>표시과목 (내과·가정의학과)<button class="q" data-help="w3" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w3" value="15"><span id="w3v"></span></div>
+        <label>개원 연수<button class="q" data-help="w4" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w4" value="15"><span id="w4v"></span></div>
+        <label>의사 수<button class="q" data-help="w5" title="설명 보기">?</button></label><div class="w"><input type="range" min="0" max="60" id="w5" value="10"><span id="w5v"></span></div>
+        <label>A등급 / B등급 기준점<button class="q" data-help="grade" title="설명 보기">?</button></label>
+        <div class="w" style="grid-template-columns:1fr 1fr"><input type="number" id="tA" value="70"><input type="number" id="tB" value="50"></div>
+        <div class="note">가중치는 합계 100으로 자동 환산됩니다.</div>
+      </details>
+      <hr>
+      <details id="evalBox">
+        <summary>고혈압·당뇨 평가 결과 반영 <button class="q" data-help="evalhow" title="받는 방법">?</button></summary>
+        <div class="note">심평원 병원평가 검색에서 받은 엑셀(XLS)을 그대로 올리세요. 한 번 올리면 다른 지역에도 계속 적용됩니다.</div>
+        <label>고혈압 평가 파일</label><input type="file" id="goodHp" accept=".xls,.xlsx,.csv">
+        <label>당뇨병 평가 파일</label><input type="file" id="goodDm" accept=".xls,.xlsx,.csv">
+        <div class="evalstat" id="evalStat">평가 데이터 없음 → ② 지표는 점수에서 제외하고 나머지로 100점 환산</div>
+        <div class="msg" id="goodMsg"></div>
+        <button class="btn full" id="goodClear">평가 데이터 지우기</button>
+      </details>
+      <hr>
+      <details>
+        <summary>설정</summary>
+        <label>중계 API 주소</label><input type="text" id="apiBase" placeholder="/api/hira">
+        <div class="note">이 페이지와 같은 Vercel 프로젝트면 비워두세요.</div>
+        <button class="btn full" id="btnCache">질병정보 캐시 비우기</button>
+        <button class="btn full" id="btnSample">샘플 데이터로 미리보기</button>
+      </details>
+      <div style="margin-top:12px"><button class="btn pri full" id="export">현재 목록 CSV 내보내기</button></div>
+      <div class="note">개별 의원의 실제 재진율은 공개되지 않아, 공개 지표로 만든 <b>추정 지수</b>입니다. <a href="#" data-help="limit">한계 보기</a></div>
+    </aside>
+
+    <section class="row" style="align-content:start">
+      <div class="row two" style="grid-template-columns:1fr 1fr">
+        <div class="card" id="secMap"><div class="sec-title">지도</div><div id="map"></div></div>
+        <div class="card"><div class="sec-title">시군구별 의원 수 (등급 구성)</div><div class="bars" id="bars"></div>
+          <div class="note"><span class="g gA">A</span> <span class="g gB">B</span> <span class="g gC">C</span> <span class="g gN">미조회</span> · 막대를 누르면 해당 시군구로 필터</div></div>
+      </div>
+      <div class="card" id="secList">
+        <div class="sec-title listhd"><span>의원 리스트 <span class="sub" id="cnt"></span> <button class="q" data-help="top" title="지수·등급 설명">?</button></span>
+          <select id="mSort" class="mobile-only" aria-label="정렬">
+            <option value="score">지수 높은 순</option><option value="chronicN">적합 질환 많은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
+          </select></div>
+        <div class="tbl"><table id="tbl"><thead><tr>
+          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
+          <th data-k="subject">과목</th><th data-k="chronicN">적합질환</th><th data-k="top5" id="thTop5">비대면 적합 질환</th><th data-k="good">평가양호</th>
+          <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="cards" id="cards"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="화면 이동">
+  <a href="#secFilter"><span>🔎</span>조건</a>
+  <a href="#secMap"><span>🗺️</span>지도</a>
+  <a href="#secList"><span>📋</span>목록</a>
+  <a href="#" data-help="top"><span>📘</span>설명</a>
+</nav>
+
+<div class="theme" role="group" aria-label="화면 모드">
+  <button type="button" data-theme-set="light" aria-label="낮 모드" title="낮 모드"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg></button>
+  <button type="button" data-theme-set="dark" aria-label="밤 모드" title="밤 모드"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>
 </div>
 
 <script>
-/* ================================================================
-   설정 — Supabase 연결값을 넣으면 DB 데이터로, 비워두면 예시 데이터로 동작
-   (Supabase > Project Settings > API 의 Project URL 과 anon public 키)
-   ================================================================ */
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
-const LIVE = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
-
-/* ===== DB 통신 ===== */
-async function sb(path,opt={}){
-  const r=await fetch(SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/'+path,{...opt,headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+SUPABASE_ANON_KEY,'Content-Type':'application/json',...(opt.headers||{})}});
-  if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,200));
-  const t=await r.text();return t?JSON.parse(t):null;
+/* ───────── 기본 설정 ───────── */
+const SIDO = [["110000","서울"],["210000","부산"],["220000","인천"],["230000","대구"],["240000","광주"],["250000","대전"],["260000","울산"],["410000","세종"],["310000","경기"],["320000","강원"],["330000","충북"],["340000","충남"],["350000","전북"],["360000","전남"],["370000","경북"],["380000","경남"],["390000","제주"]];
+const SUBNAME = {"01":"내과","23":"가정의학과","00":"일반의"};
+/* 비대면 적합 질환 (Top5 질병명에 키워드가 들어 있으면 해당) */
+const TELE = [
+  {id:"htn",  label:"고혈압",              keys:["고혈압"],                         on:true},
+  {id:"dm",   label:"당뇨병",              keys:["당뇨"],                           on:true},
+  {id:"lipid",label:"이상지질혈증",        keys:["이상지질","고지혈"],              on:true},
+  {id:"thy",  label:"갑상선 질환",         keys:["갑상선"],                         on:true},
+  {id:"osteo",label:"골다공증",            keys:["골다공증"],                       on:true},
+  {id:"gout", label:"통풍",                keys:["통풍"],                           on:true},
+  {id:"resp", label:"천식·만성폐쇄성폐질환",keys:["천식","만성폐쇄성"],             on:true},
+  {id:"gerd", label:"위식도역류질환",      keys:["위식도역류","역류성"],            on:true},
+  {id:"bph",  label:"전립선비대증",        keys:["전립선"],                         on:true},
+  {id:"liver",label:"만성간질환·간염",     keys:["만성간","간염"],                  on:true},
+  {id:"ckd",  label:"만성신장질환",        keys:["만성신","신부전"],                on:true},
+  {id:"heart",label:"심장질환(협심증·심부전·부정맥)", keys:["협심","심부전","부정맥"], on:true},
+  {id:"stroke",label:"뇌졸중 후 관리",     keys:["뇌졸중","뇌경색"],                on:true},
+  {id:"dem",  label:"치매·파킨슨병",       keys:["치매","파킨슨"],                  on:true, why:"장기요양수급자 등은 지역 제한 예외"},
+  {id:"arth", label:"관절염",              keys:["관절"],                           on:true},
+  {id:"rhin", label:"알레르기비염·아토피", keys:["비염","아토피"],                  on:false, why:"계절성·단기 처방이 많아 기본 제외"},
+  {id:"insom",label:"불면증",              keys:["불면"],                           on:false, why:"수면제 상당수가 향정신성의약품(마약류) → 비대면 처방 금지"},
+  {id:"anx",  label:"우울·불안·공황",      keys:["우울","불안","공황"],             on:false, why:"향정신성 항불안제 처방 비중이 높음"},
+  {id:"obes", label:"비만",                keys:["비만"],                           on:false, why:"비만치료제는 비대면 처방 금지"},
+  {id:"adhd", label:"ADHD",                keys:["ADHD","주의력결핍"],              on:false, why:"치료제가 마약류 → 비대면 처방 금지"},
+  {id:"acute",label:"감기·장염 등 급성질환",keys:["감기","장염","인두염","편도","위장염","방광염"], on:false, why:"초진 7일 처방, 재진으로 이어지지 않음"},
+];
+let TELE_ON = {};
+const teleKeys = () => TELE.filter(t => TELE_ON[t.id]).flatMap(t => t.keys);
+let KEYS = [];
+let OVR = {};   // 질병명별 고정 {이름: true/false} — loadTele()에서 불러옴
+const autoClass = d => KEYS.some(k => d.includes(k));
+const anyKey = d => TELE.some(t => t.keys.some(k => d.includes(k)));
+const isChronic = d => (d in OVR) ? OVR[d] : autoClass(d);
+function renderDz(){
+  const cnt = {}; RAW.forEach(r => { if(r.looked) (r.top5||"").split("|").filter(Boolean).forEach(d => cnt[d] = (cnt[d]||0) + 1); });
+  const names = Object.keys(cnt).sort((a,b) => cnt[b]-cnt[a]);
+  if(!names.length){ $("dzList").innerHTML = '<div class="note">질병정보를 조회하면 여기에 나타납니다.</div>'; return; }
+  $("dzList").innerHTML = names.map(d => {
+    const on = isChronic(d), fixed = d in OVR, unk = !fixed && !anyKey(d);
+    const st = unk ? '<span class="st u">미분류</span>' : on ? '<span class="st y">적합</span>' : '<span class="st n">제외</span>';
+    return `<label class="dz"><span><input type="checkbox" data-dz="${esc(d)}" ${on?"checked":""}> ${esc(d)} <span class="est">${cnt[d]}곳${fixed?" · 고정":""}</span></span>${st}</label>`;
+  }).join("");
+  $("dzList").querySelectorAll("input").forEach(cb => cb.onchange = () => { OVR[cb.dataset.dz] = cb.checked; store.set("chronic_ovr", OVR); apply(); renderDz(); });
 }
-async function sbAll(table,query){
-  let out=[],from=0;const step=1000;
-  for(;;){const rows=await sb(`${table}?${query}`,{headers:{Range:`${from}-${from+step-1}`,'Range-Unit':'items'}});
-    out=out.concat(rows);if(rows.length<step)break;from+=step}
-  return out;
+function loadTele(){
+  const saved = store.get("chronic_tele", null);
+  TELE.forEach(t => TELE_ON[t.id] = saved && t.id in saved ? !!saved[t.id] : t.on);
+  OVR = store.get("chronic_ovr", {});
+  KEYS = teleKeys();
 }
-const enc=encodeURIComponent;
-
-/* ===== 마스터 데이터 ===== */
-const DB={hospitals:[],hospByCode:{},docsByHosp:{},docByCode:{},cats:{},acts:{},regions:[]};
-function buildDB(H,D,P,A){
-  DB.hospitals=H;DB.hospByCode={};H.forEach(h=>DB.hospByCode[h.code]=h);
-  DB.docsByHosp={};DB.docByCode={};
-  D.forEach(d=>{(DB.docsByHosp[d.hosp]=DB.docsByHosp[d.hosp]||[]).push(d);DB.docByCode[d.code]=d});
-  Object.values(DB.docsByHosp).forEach(l=>l.sort((a,b)=>(a.grade||'Z').localeCompare(b.grade||'Z')||a.name.localeCompare(b.name,'ko')));
-  DB.cats={};P.forEach(p=>(DB.cats[p.category]=DB.cats[p.category]||[]).push(p));
-  for(const k in DB.cats)DB.cats[k]=DB.cats[k].sort((a,b)=>a.sort-b.sort).map(p=>p.product);
-  DB.acts={};A.forEach(a=>(DB.acts[a.type1]=DB.acts[a.type1]||[]).push(a));
-  for(const k in DB.acts)DB.acts[k]=DB.acts[k].sort((a,b)=>a.sort-b.sort).map(a=>a.type2);
-  DB.regions=[...new Set(H.map(h=>h.region))].sort((a,b)=>a.localeCompare(b,'ko'));
+function renderTele(){
+  const on = TELE.filter(t => t.on), off = TELE.filter(t => !t.on);
+  const row = t => `<label><input type="checkbox" data-tele="${t.id}" ${TELE_ON[t.id]?"checked":""}><span>${t.label}</span>${t.why?`<small>${t.why}</small>`:""}</label>`;
+  $("teleList").innerHTML = `<div class="grp">기본 포함 (만성질환)</div>${on.map(row).join("")}<div class="grp x">기본 제외</div>${off.map(row).join("")}`;
+  $("teleList").querySelectorAll("input").forEach(cb => cb.onchange = () => { TELE_ON[cb.dataset.tele] = cb.checked; store.set("chronic_tele", TELE_ON); KEYS = teleKeys(); apply(); });
 }
-async function loadMaster(){
-  if(LIVE){
-    const [H,D,P,A]=await Promise.all([
-      sbAll('crm_hospitals','select=code,name,region,fav&order=name.asc'),
-      sbAll('crm_doctors','select=code,hospital_code,name,dept,grade,target'),
-      sbAll('crm_products','select=category,product,sort&order=id.asc'),
-      sbAll('crm_activities','select=type1,type2,sort&order=id.asc')]);
-    buildDB(H,D.map(d=>({code:d.code,hosp:d.hospital_code,name:d.name,dept:d.dept||'',grade:(d.grade||'').trim(),target:d.target!==false})),P,A);
-  } else buildDB(...sampleData());
-}
-
-/* ===== 예시 데이터 (DB 미연결 시) ===== */
-const HLIST=`
-서초구|반포동|서울성모병원|상급종합
-동작구|흑석동|중앙대학교병원|상급종합
-동작구|신대방동|보라매병원|종합병원
-서초구|반포동|유니내과의원|내과
-서초구|반포동|이나영내과의원|내과
-서초구|반포동|센트럴정형외과의원|정형외과
-서초구|반포동|반포키즈소아청소년과의원|소아청소년과
-서초구|반포동|고운소아청소년과의원|소아청소년과
-서초구|반포동|연세안과의원|안과
-서초구|반포동|레이나산부인과의원|산부인과
-서초구|반포동|서초봄산부인과의원|산부인과
-서초구|반포동|강남서울외과의원|외과
-서초구|반포동|강남에스터산부인과의원|산부인과
-서초구|반포동|샘신경정신과의원|신경과
-서초구|반포동|페이지랩의원|내과
-서초구|반포동|블랑산부인과의원|산부인과
-서초구|반포동|마노메디비뇨기과의원|비뇨의학과
-서초구|반포동|반포온가족의원|가정의학과
-서초구|반포동|자스민피부과의원|피부과
-서초구|양재동|서울이비인후과의원|이비인후과
-서초구|양재동|양재서울이비인후과의원|이비인후과
-서초구|양재동|박병대비뇨기과의원|비뇨의학과
-서초구|양재동|김현중비뇨기과의원|비뇨의학과
-서초구|양재동|서울아산신경과의원|신경과
-서초구|양재동|정가정의원|가정의학과
-서초구|양재동|서울준재활의학과의원|재활의학과
-서초구|양재동|장은진산부인과의원|산부인과
-서초구|양재동|최종배정신건강의학과의원|정신건강의학과
-서초구|잠원동|다나가정의학과의원|가정의학과
-서초구|잠원동|샤인의원|내과
-서초구|잠원동|최인석의원|내과
-서초구|잠원동|논현정형외과의원|정형외과
-서초구|잠원동|강남성모비뇨의학과의원|비뇨의학과
-서초구|잠원동|온마음정신건강의학과의원|정신건강의학과
-서초구|서초동|이립마취통증의학과의원|마취통증의학과
-서초구|서초동|21세기영상의학과의원|영상의학과
-서초구|서초동|연세미시간산부인과의원|산부인과
-서초구|서초동|성모진안과의원|안과
-서초구|서초동|강남세렌여성의원|산부인과
-서초구|서초동|장내과의원|내과
-서초구|서초동|서울탑비뇨기과의원|비뇨의학과
-서초구|서초동|미라클의원|정형외과
-서초구|서초동|교대성모안과의원|안과
-서초구|서초동|잘보는비뇨의학과의원|비뇨의학과
-서초구|서초동|지앤산부인과의원|산부인과
-서초구|서초동|안명덕안과의원|안과
-서초구|서초동|서울이즈정형외과의원|정형외과
-서초구|서초동|다시봄안과의원|안과
-서초구|서초동|반듯한정형외과의원|정형외과
-서초구|서초동|승기배내과의원|내과
-서초구|서초동|강남유로비뇨의학과의원|비뇨의학과
-서초구|서초동|이승남강남베스트클리닉|가정의학과
-서초구|서초동|연세마디힘재활의학과의원|재활의학과
-서초구|서초동|엔디준의원|내과
-서초구|서초동|연세더블유산부인과의원|산부인과
-서초구|서초동|서초성모이비인후과의원|이비인후과
-서초구|서초동|녹십자아이메드의원|내과
-서초구|서초동|강남영상의학과의원|영상의학과
-서초구|방배동|미앤아이의원|내과
-서초구|방배동|허기훈내과의원|내과
-서초구|방배동|헤세드신경외과의원|신경외과
-서초구|방배동|온빛정신건강의학과의원|정신건강의학과
-서초구|방배동|늘푸른이비인후과의원|이비인후과
-서초구|방배동|윤기헌비뇨기과의원|비뇨의학과
-서초구|방배동|서울편한마취통증의학과의원|마취통증의학과
-서초구|방배동|서리풀성모여성의원|산부인과
-서초구|방배동|방배바른본외과의원|외과
-서초구|방배동|참나은내과의원|내과
-서초구|방배동|윌정신건강의학과의원|정신건강의학과
-서초구|방배동|리더스성모안과의원|안과
-서초구|방배동|연세베스트정형외과재활의학과의원|정형외과
-서초구|방배동|방배연내과의원|내과
-서초구|우면동|나우리소아청소년과의원|소아청소년과
-서초구|우면동|이성윤의원|내과
-서초구|우면동|성모튼튼의원|내과
-서초구|우면동|명성내과의원|내과
-서초구|우면동|복십자의원|내과
-서초구|우면동|서초우면정형외과의원|정형외과
-서초구|우면동|한현주여성의원|산부인과
-동작구|노량진동|김영내과의원|내과
-동작구|노량진동|노량진튼튼의원|내과
-동작구|노량진동|동작고려의원|내과
-동작구|노량진동|광보의원|내과
-동작구|노량진동|드림이비인후과의원|이비인후과
-동작구|노량진동|박이비인후과의원|이비인후과
-동작구|노량진동|김안과의원|안과
-동작구|노량진동|노량진성모정신건강의학과의원|정신건강의학과
-동작구|노량진동|온힐가정의학과의원|가정의학과
-동작구|노량진동|노량진아산마취통증의학과의원|마취통증의학과
-동작구|노량진동|나루정신건강의학과의원|정신건강의학과
-동작구|노량진동|기쁨준내과의원|내과
-동작구|노량진동|푸른정형외과의원|정형외과
-동작구|노량진동|로코모재활의학과의원|재활의학과
-동작구|신대방동|조은내과의원|내과
-동작구|신대방동|하정한정형외과의원|정형외과
-동작구|신대방동|신항장외과의원|외과
-동작구|신대방동|코사랑이비인후과의원|이비인후과
-동작구|신대방동|반마취통증의학과의원|마취통증의학과
-동작구|신대방동|다엘소아청소년과의원|소아청소년과
-동작구|신대방동|미즈여성의원|산부인과
-동작구|신대방동|호호안과의원|안과
-동작구|신대방동|봄정신건강의학과의원|정신건강의학과
-동작구|신대방동|예일성모내과의원|내과
-동작구|신대방동|연세에이스정형외과의원|정형외과
-동작구|신대방동|더조은마취통증의학과의원|마취통증의학과
-동작구|신대방동|보람의원|내과
-동작구|신대방동|김수진내과의원|내과
-동작구|신대방동|노현주산부인과|산부인과
-동작구|신대방동|손이비인후과의원|이비인후과
-동작구|신대방동|정다운외과의원|외과
-동작구|상도동|서울에이스내과의원|내과
-동작구|상도동|시야안과의원|안과
-동작구|상도동|오늘시원이비인후과의원|이비인후과
-동작구|상도동|아이사랑소아청소년과의원|소아청소년과
-동작구|상도동|상도시원마취통증의학과의원|마취통증의학과
-동작구|상도동|바로나마취통증의학과의원|마취통증의학과
-동작구|상도동|에코이비인후과의원|이비인후과
-동작구|상도동|유내과의원|내과
-동작구|상도동|아산바른내과의원|내과
-동작구|상도동|강호경내과의원|내과
-동작구|상도동|루봄산부인과의원|산부인과
-동작구|상도동|삼성공감정신건강의학과의원|정신건강의학과
-동작구|상도동|정호현비뇨기과의원|비뇨의학과
-동작구|상도동|이규성정형외과의원|정형외과
-동작구|상도동|박홍석정신건강의학과의원|정신건강의학과
-동작구|상도동|양진석내과의원|내과
-동작구|상도동|최안과의원|안과
-동작구|상도동|서울안과의원|안과
-동작구|상도동|연세이비인후과의원|이비인후과
-동작구|상도동|티엘여성의원|산부인과
-동작구|상도동|늘건강내과이비인후과의원|내과
-동작구|사당동|에이치에스신경외과의원|신경외과
-동작구|사당동|명의원|안과
-동작구|사당동|장경진이비인후과의원|이비인후과
-동작구|사당동|이수제일정형외과의원|정형외과
-동작구|사당동|고운미의원|내과
-동작구|사당동|이수연세이비인후과의원|이비인후과
-동작구|사당동|이지은산부인과의원|산부인과
-동작구|사당동|강남가드비뇨기과의원|비뇨의학과
-동작구|사당동|이수정신건강의학과의원|정신건강의학과
-동작구|사당동|연세맑은안과의원|안과
-동작구|사당동|한일의원|내과
-동작구|사당동|백신클리닉|내과
-동작구|사당동|한양씨티내과의원|내과
-동작구|사당동|사당정형외과의원|정형외과
-동작구|사당동|사당숲정신건강의학과의원|정신건강의학과
-동작구|흑석동|다시봄의원|내과
-동작구|흑석동|우리들의원|내과
-동작구|흑석동|나란히정신건강의학과의원|정신건강의학과
-동작구|흑석동|혜윤산부인과의원|산부인과
-동작구|흑석동|조태환정형외과의원|정형외과
-동작구|흑석동|오연상내과의원|내과
-동작구|대방동|경해가정의원|가정의학과
-동작구|대방동|강미자산부인과의원|산부인과
-동작구|대방동|삼성열린내과의원|내과
-동작구|대방동|성모정형외과의원|정형외과
-동작구|대방동|서울대방내과의원|내과
-동작구|대방동|예담신경외과의원|신경외과
-동작구|대방동|이영록내과의원|내과
-서초구|방배동|고려더튼튼정형외과재활의학과의원|정형외과
-서초구|방배동|화인마취통증의학과의원|마취통증의학과
-서초구|방배동|김갑수마취통증의학과의원|마취통증의학과
-서초구|방배동|흐린뒤맑음신경과의원|신경과
-서초구|방배동|서울에스마취통증의학과의원|마취통증의학과
-서초구|방배동|연세정신건강의학과의원|정신건강의학과
-서초구|방배동|기쁨삼성내과의원|내과
-서초구|방배동|연세탑뷰티의원|재활의학과
-동작구|사당동|서울베스트마취통증의학과의원|마취통증의학과
-동작구|사당동|윤수정의원|가정의학과
-동작구|사당동|성노마취통증의학과의원|마취통증의학과
-동작구|사당동|사계절신경외과의원|신경외과
-동작구|사당동|사계절내과의원|내과
-동작구|사당동|강남성모정형외과의원|정형외과
-동작구|사당동|밀려오네서울재활의학과의원|재활의학과
-서초구|잠원동|반포신경외과의원|신경외과
-서초구|잠원동|엄인호마취통증의학과의원|마취통증의학과
-서초구|잠원동|신이경의바로정형외과의원|정형외과
-서초구|반포동|강남연세재활의학과의원|재활의학과
-서초구|반포동|반포서울재활의학과의원|재활의학과
-서초구|반포동|서울원피부과의원|피부과
-서초구|반포동|반포성모정형외과의원|정형외과
-서초구|반포동|유안정형외과의원|정형외과
-서초구|반포동|지에이치의원|재활의학과
-`.trim().split('\n').map(l=>l.split('|'));
-function sampleData(){
-  /* 병의원명: 서울 서초구·동작구 실제 기관명(공개 병원 검색 서비스 기준) / HCP: 전원 가상 인물 */
-  const FAV=['서울성모병원','중앙대학교병원','보라매병원','유니내과의원','김영내과의원','서울에이스내과의원','허기훈내과의원','장내과의원','조은내과의원','사계절내과의원'];
-  const H=HLIST.map((x,i)=>({code:(x[0]==='서초구'?'SC':'DJ')+String(i+1).padStart(3,'0'),region:'서울/'+x[0],dong:x[1],name:x[2],
-    type:x[3]==='상급종합'||x[3]==='종합병원'?x[3]:'의원',dept:x[3]==='상급종합'||x[3]==='종합병원'?'':x[3],fav:FAV.includes(x[2])}));
-  const SUR='김이박최정강조윤장임한오서신권황안송류홍문배백허남전고양손'.split(''),GIV=['민준','서연','도윤','지우','하준','수아','현우','지민','준서','예린','성호','은지','태윤','가은','재원','소율','동현','하린','승우','다은','정훈','유진','시온','채원','영민','혜진','상훈','미경'];
-  const hash=s=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h^=h>>>15;h=Math.imul(h,2246822507);h^=h>>>13;h=Math.imul(h,3266489909);h^=h>>>16;return h>>>0};
-  const used=new Set();
-  const fake=seed=>{let k=hash(seed),n;do{n=SUR[k%SUR.length]+GIV[(k>>>6)%GIV.length];k=hash(n+k)}while(used.has(n));used.add(n);return n};
-  const TARGET_DEPT=['내과','순환기내과','내분비내과','신장내과','신경과','가정의학과','소화기내과','호흡기내과','혈액종양내과','정형외과','재활의학과','신경외과','마취통증의학과'];
-  const BIG=['순환기내과','순환기내과','내분비내과','내분비내과','신장내과','소화기내과','호흡기내과','신경과','혈액종양내과','가정의학과','소아청소년과','정형외과','신경외과','재활의학과'];
-  const POS=['교수','교수','부교수','조교수','임상강사'];
-  const D=[];let cc=300100;
-  H.forEach(h=>{
-    if(h.type!=='의원'){
-      const n=h.type==='상급종합'?14:10;
-      for(let i=0;i<n;i++){const k=hash(h.code+i),dept=BIG[i%BIG.length];
-        D.push({code:String(cc+=7),hosp:h.code,name:fake(h.code+i),dept,pos:POS[k%POS.length],grade:'AABBC'[(k>>>9)%5],target:true})}
-    } else {
-      /* 의원 HCP 1~3명 랜덤: 1명 50% · 2명 30% · 3명 20% */
-      const r=hash(h.name+'n')%10,n=r<5?1:r<8?2:3;
-      for(let i=0;i<n;i++){const k=hash(h.code+'d'+i);
-        const dept=(i>0&&h.dept==='내과'&&k%3===0)?'가정의학과':h.dept;
-        const tgt=true;
-        D.push({code:String(cc+=7),hosp:h.code,name:fake(h.code+'d'+i),dept,pos:i===0?'대표원장':'원장',grade:i===0?'AB'[k%2]:'BC'[k%2],target:tgt})}
-    }
-  });
-  const cats={'심혈관계':['로수바미브','아토르바','아토바미브에이','아토바미브정','암로핀','트루셋정','유한아픽사반','안플라그','액티라제'],'내분비계':['자디앙','자디앙듀오','트라젠타','트라젠타듀오','트라듀오','액피오','에스글리토'],'항암제':['렉라자']};
-  const P=[];for(const c in cats)cats[c].forEach((p,i)=>P.push({category:c,product:p,sort:i}));
-  const acts={'계획/준비 방문':['일정 협의','자료 전달'],'Detail':['키메세지','브로셔','임상논문'],'방문디테일':['키메세지','브로셔','임상논문'],'1day 제품설명회':['식음료 제공','강의만'],'숙박 제품설명회':['식음료 제공','강의만'],'마케팅':['학회 부스','심포지엄'],'단일기관 참석':['강의 청취','연자 지원'],'다기관 참석':['강의 청취','연자 지원'],'Web seminar 참석':['실시간','다시보기'],'1만원이하식음료':['커피/음료','다과']};
-  const A=[];let n=0;for(const a in acts)acts[a].forEach(b=>A.push({type1:a,type2:b,sort:n++}));
-  return [H,D,P,A];
-}
-
-/* ===== 초성 ===== */
-const CHO=['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const KEYS=['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ','A-Z'];
-const SINGLE={'ㄲ':'ㄱ','ㄸ':'ㄷ','ㅃ':'ㅂ','ㅆ':'ㅅ','ㅉ':'ㅈ'};
-function choOf(ch){const c=ch.charCodeAt(0)-0xAC00;if(c<0||c>11171)return 'A-Z';const k=CHO[Math.floor(c/588)];return SINGLE[k]||k}
-
-/* ===== 상태 ===== */
-const today=new Date();today.setHours(0,0,0,0);
-const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-let S,taps=0,seq=0,demoHistory={},loadErr=null;
-function initState(){
-  S={date:iso(today),region:store.get('crm_region')||'',mr:store.get('crm_mr')||(LIVE?'':'김유한(시연)'),visits:[],screen:'home',q:'',pref:'',dongF:'',deptF:'',hosp:null,sel:new Set(),showNon:false,queue:[],qi:0,step:0,draft:[],lastUsed:null,hist:{},stack:[]};
-  if(!DB.regions.includes(S.region))S.region=DB.regions[0]||'';
-}
-function seedDemo(){
-  if(!store.get('crm_region')||!DB.regions.includes(store.get('crm_region')))S.region='서울/서초구';
-  const h=DB.hospitals.find(x=>x.name==='서울성모병원');if(!h)return;
-  const ds=(DB.docsByHosp[h.code]||[]).filter(d=>/순환기|내분비/.test(d.dept));
-  if(ds[0])demoHistory[ds[0].code]=['심혈관계','로수바미브','Detail','브로셔'];
-  if(ds[1])demoHistory[ds[1].code]=['내분비계','자디앙','Detail','임상논문'];
-  ['유니내과의원','김영내과의원','중앙대학교병원'].forEach((nm,i)=>{const x=DB.hospitals.find(y=>y.name===nm);if(!x)return;
-    const t=(DB.docsByHosp[x.code]||[]).filter(d=>d.target);if(t[0])demoHistory[t[0].code]=[['내분비계','트라젠타','Detail','브로셔'],['심혈관계','트루셋정','Detail','키메세지'],['심혈관계','유한아픽사반','Detail','임상논문']][i]});
-}
-async function loadVisits(){
-  if(!LIVE||!S.mr)return;
-  const rows=await sb(`crm_visits?mr_name=eq.${enc(S.mr)}&visit_date=eq.${S.date}&order=id.asc`);
-  const drafts=S.visits.filter(v=>!v.dbId);
-  S.visits=rows.map(r=>({id:++seq,dbId:r.id,date:r.visit_date,hosp:r.hospital_code,hospName:r.hospital_name,
-    doc:DB.docByCode[r.doctor_code]||{code:r.doctor_code,name:r.doctor_name||'(삭제된 고객)',dept:'',grade:'',target:true},
-    act:r.category?[r.category,r.product,r.act1,r.act2]:null})).concat(drafts);
-}
-async function loadHistory(codes){
-  if(!LIVE){codes.forEach(c=>{if(demoHistory[c])S.hist[c]=demoHistory[c]});return}
-  if(!codes.length)return;
-  try{const rows=await sb(`crm_visits?select=doctor_code,category,product,act1,act2&doctor_code=in.(${codes.map(c=>'"'+c+'"').join(',')})&category=not.is.null&order=visit_date.desc,id.desc&limit=300`);
-    rows.forEach(r=>{if(!S.hist[r.doctor_code])S.hist[r.doctor_code]=[r.category,r.product,r.act1,r.act2]})}catch(e){}
-}
-
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const hName=code=>(DB.hospByCode[code]||{}).name||code;
-function go(screen){S.stack.push(snapshotNav());S.screen=screen;render();$('body').scrollTop=0}
-function snapshotNav(){return {screen:S.screen,step:S.step,qi:S.qi}}
-function back(){const p=S.stack.pop();if(!p){S.screen='home';render();return}Object.assign(S,p);if(S.screen==='act')S.draft=(S.draft||[]).slice(0,S.step);render()}
-function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,1800)}
-function setFoot(html){$('foot').innerHTML=html;$('foot').hidden=!html}
-
-/* ===== 화면 ===== */
-const STEPN={setup:0,home:0,hosp:1,doc:2,act:3,next:3,review:4};
-function render(){
-  const sc=S.screen;
-  if(render.last!==sc){S.confirmDel=null;S.confirmAll=false;render.last=sc}
-  $('backBtn').style.visibility=(sc==='home'||(sc==='setup'&&!S.mr))?'hidden':'visible';
-  [...$('steps').children].forEach((el,i)=>el.classList.toggle('on',i<STEPN[sc]));
-  document.querySelectorAll('#flow li').forEach(li=>li.classList.toggle('on',li.dataset.s===(sc==='next'?'act':sc)));
-  $('taps').textContent='탭 '+taps;
-  ({setup:vSetup,home:vHome,hosp:vHosp,doc:vDoc,act:vAct,next:vNext,review:vReview})[sc]();
-}
-
-function vSetup(){
-  $('ttl').textContent='담당자 설정';$('crumb').innerHTML='';
-  $('body').innerHTML=`<div class="field"><label class="lbl" for="mrName">담당자 이름 (처음 한 번만)</label><input id="mrName" value="${esc(S.mr)}" placeholder="예: 홍길동" autocomplete="name"></div>
-    <div class="lbl">지역</div><div class="grid g2">${DB.regions.map(r=>`<button class="tile ${r===S.region?'on':''}" data-act="region" data-v="${esc(r)}">${esc(r)}<span class="s">병원 ${DB.hospitals.filter(h=>h.region===r).length}곳</span></button>`).join('')}</div>`;
-  setFoot('<button class="btn pri" data-act="setupDone">시작</button>');
-}
-
-function delCtl(v,label){
-  if(S.confirmDel===v.id)return `<div class="delbar"><span>${esc(v.doc.name)} 선생님 기록을 삭제할까요?</span><button data-act="delCancel">취소</button><button class="danger" data-act="delOk" data-v="${v.id}">삭제</button></div>`;
-  return '';
-}
-function vLine(v,rowAct,status,sub){
-  return `<div class="vline"><button class="vrow" data-act="${rowAct}" data-v="${v.id}"><span class="grade">${esc(v.doc.grade||'-')}</span>
-      <span class="grow"><span class="nm">${esc(v.doc.name)} <small style="color:var(--muted);font-weight:500">${esc(sub)}</small></span>
-      <span class="sub">${v.act?v.act.map(a=>`<span class="chip">${esc(a)}</span>`).join(''):'활동을 아직 입력하지 않았습니다'}</span></span>${status}</button>
-    <button class="vdel" data-act="delAsk" data-v="${v.id}" aria-label="${esc(v.doc.name)} 기록 삭제">삭제</button></div>${delCtl(v)}`;
-}
-function vHome(){
-  $('ttl').textContent='방문 결과';
-  $('crumb').innerHTML=`<button class="chip" data-act="setup">${esc(S.region)} · ${esc(S.mr)} ✎</button>`;
-  const days=[];for(let i=-3;i<=3;i++){const d=new Date(today);d.setDate(d.getDate()+i);days.push(d)}
-  const wk='일월화수목금토';
-  let h='';
-  if(!LIVE)h+='<div class="banner">시연용 데이터: 서울 서초구·동작구 병의원명에 가상 닥터를 넣었습니다. 위 지역 칩을 눌러 서초구/동작구를 바꿀 수 있습니다.</div>';
-  h+='<div class="days">'+days.map(d=>`<button class="day ${iso(d)===S.date?'on':''}" data-act="date" data-v="${iso(d)}"><small>${wk[d.getDay()]}</small><b>${d.getDate()}</b></button>`).join('')+'</div>';
-  h+='<button class="add" data-act="add">＋ 방문 추가</button>';
-  const vs=S.visits.filter(v=>v.date===S.date);
-  if(!vs.length)h+='<div class="empty">이 날짜에 등록된 방문이 없습니다.<br>‘방문 추가’를 눌러 병원부터 고르세요.</div>';
-  if(vs.length)h+=S.confirmAll?`<div class="delbar" style="border:0;border-radius:12px"><span>이 날짜 기록 ${vs.length}건을 모두 삭제할까요?</span><button data-act="delAllCancel">취소</button><button class="danger" data-act="delAllOk">모두 삭제</button></div>`:`<button class="delall" data-act="delAllAsk">이 날짜 기록 모두 삭제</button>`;
-  const groups={};vs.forEach(v=>(groups[v.hosp]=groups[v.hosp]||[]).push(v));
-  for(const [hc,list] of Object.entries(groups)){
-    const todo=list.filter(v=>!v.act).length;
-    h+=`<div class="hosp"><h3>${esc(list[0].hospName||hName(hc))}<small>${todo?`미입력 ${todo}명`:'모두 입력'}</small></h3>`+list.map(v=>vLine(v,'editVisit',`<span class="st ${v.act?(v.dbId?'ok':'draft'):'todo'}">${v.act?(v.dbId?'저장됨':'미저장'):'입력'}</span>`,v.doc.dept)).join('')+'</div>';
-  }
-  $('body').innerHTML=h;
-  const pending=vs.filter(v=>!v.act||!v.dbId);
-  setFoot(pending.length?`<button class="btn pri" data-act="fillPending">미입력·미저장 ${pending.length}명 이어서</button>`:'');
-}
-
-function regionHosps(){return DB.hospitals.filter(h=>h.region===S.region)}
-/* 초성 문자열 (쌍자음 → 홑자음) */
-const choCache={};
-function choStr(name){if(choCache[name])return choCache[name];let o='';for(const ch of name){const c=ch.charCodeAt(0)-0xAC00;if(c<0||c>11171){o+=' ';continue}const k=CHO[Math.floor(c/588)];o+=SINGLE[k]||k}return choCache[name]=o}
-const PAD=['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-function hospSearch(){
-  let base=regionHosps();
-  if(S.dongF)base=base.filter(h=>h.dong===S.dongF);
-  if(S.deptF)base=base.filter(h=>S.deptF==='병원급'?h.type!=='의원':h.dept===S.deptF);
-  if(S.pref)base=base.filter(h=>h.name.startsWith(S.pref));
-  const q=S.q,next=new Set(),res=[];
-  base.forEach(h=>{const c=choStr(h.name);
-    if(!q){res.push({h,idx:-1});for(const ch of c)if(ch!==' ')next.add(ch);return}
-    let i=c.indexOf(q),first=i;if(i<0)return;
-    while(i>=0){const nx=c[i+q.length];if(nx&&nx!==' ')next.add(nx);i=c.indexOf(q,i+1)}
-    res.push({h,idx:first});
-  });
-  res.sort((a,b)=>(a.idx===0?0:1)-(b.idx===0?0:1)||a.h.name.localeCompare(b.h.name,'ko'));
-  return {res,next,base};
-}
-function hlName(name,idx,len){
-  if(idx<0||!len){return S.pref&&name.startsWith(S.pref)?`<mark>${esc(S.pref)}</mark>${esc(name.slice(S.pref.length))}`:esc(name)}
-  const a=[...name];return esc(a.slice(0,idx).join(''))+'<mark>'+esc(a.slice(idx,idx+len).join(''))+'</mark>'+esc(a.slice(idx+len).join(''));
-}
-function vHosp(){
-  $('ttl').textContent='병원 찾기';
-  $('crumb').innerHTML=`<span class="chip acc">${esc(S.region.replace('서울/',''))}</span>`+(S.dongF?`<button class="chip" data-act="dongF" data-v="">${esc(S.dongF)} ✕</button>`:'')+(S.deptF?`<button class="chip" data-act="deptF" data-v="">${esc(S.deptF)} ✕</button>`:'')+(S.pref?`<button class="chip" data-act="pref" data-v="">${esc(S.pref)}… ✕</button>`:'');
-  const all=regionHosps();
-  const {res,next}=hospSearch();
-  const dongs=[...new Set(all.map(h=>h.dong))].sort((a,b)=>a.localeCompare(b,'ko'));
-  const deptCnt={};all.forEach(h=>{const k=h.type!=='의원'?'병원급':h.dept;deptCnt[k]=(deptCnt[k]||0)+1});
-  const depts=Object.entries(deptCnt).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
-  /* 1) 초성 자판이 맨 위 — 다음에 올 수 없는 초성은 비활성 */
-  let h=`<div class="pad top-pad"><div class="qline"><span class="qv">${S.q?esc(S.q):'<span class="ph">병원 이름 초성을 누르세요 · 예) 유니내과 → ㅇㄴ</span>'}</span>${S.q?'<button class="qclr" data-act="qClear">지우기</button>':''}</div>
-    <div class="keys">${PAD.map(k=>`<button class="pk" data-act="q" data-v="${k}" ${next.has(k)?'':'disabled'}>${k}</button>`).join('')}<button class="pk del" data-act="qDel" ${S.q?'':'disabled'} aria-label="한 글자 지우기">⌫</button></div></div>`;
-  /* 2) 동·진료과 칩 */
-  h+=`<div class="fil">${dongs.map(d=>`<button class="fchip ${S.dongF===d?'on':''}" data-act="dongF" data-v="${S.dongF===d?'':esc(d)}">${esc(d)}</button>`).join('')}<span class="fsep"></span>${depts.map(d=>`<button class="fchip dep ${S.deptF===d?'on':''}" data-act="deptF" data-v="${S.deptF===d?'':esc(d)}">${esc(d)}</button>`).join('')}</div>`;
-  /* 3) 결과 */
-  const filtered=S.q||S.pref||S.dongF||S.deptF;
-  if(!filtered){
-    h+=`<div class="empty">${esc(S.region.replace('서울/',''))} 병의원 ${all.length}곳<br>초성 2~3개를 누르면 바로 좁혀집니다.</div>`;
-  } else {
-    if(S.q&&res.length>6&&!S.pref){
-      const pc={};res.filter(r=>r.idx===0).forEach(r=>{const p=[...r.h.name].slice(0,2).join('');pc[p]=(pc[p]||0)+1});
-      const tops=Object.entries(pc).filter(x=>x[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,6);
-      if(tops.length)h+=`<div class="lbl">이렇게 시작하는 이름</div><div class="fil wrapf">${tops.map(([p,n])=>`<button class="pchip" data-act="pref" data-v="${esc(p)}">${esc(p)}<small>${n}</small></button>`).join('')}</div>`;
-    }
-    h+=`<div class="sec"><span class="lbl">찾은 병원 <b>${res.length}</b></span>${res.length===1?'<span class="lbl" style="color:var(--point)">이 병원이 맞으면 누르세요</span>':''}</div>`;
-    h+=res.length?res.slice(0,60).map(r=>hospRow(r.h,r.idx,S.q.length)).join(''):'<div class="empty">맞는 병원이 없습니다. ⌫ 로 초성을 지우거나 필터를 풀어보세요.</div>';
-  }
-  $('body').innerHTML=h;setFoot('');
-}
-function hospRow(x,idx,len){const ds=DB.docsByHosp[x.code]||[];const done=S.visits.filter(v=>v.date===S.date&&v.hosp===x.code).length;
-  return `<button class="row" data-act="hosp" data-v="${esc(x.code)}"><span class="grow">${hlName(x.name,idx??-1,len||0)}<br><span class="s">${x.type!=='의원'?esc(x.type)+' · ':''}${esc(x.dong||'')}${x.dept?' · '+esc(x.dept):''} · 선생님 ${ds.length}명${done?` · 오늘 ${done}명 등록`:''}</span></span><span class="hc">${ds.length}</span></button>`}
-function docCard(d,already){
-  const on=S.sel.has(d.code),was=already.has(d.code);
-  return `<button class="doc ${on?'on':''}" data-act="doc" data-v="${esc(d.code)}" ${was?'disabled style="opacity:.45"':''}>${was?'':'<span class="ck">✓</span>'}
-    <span class="nm"><span class="grade">${esc(d.grade||'-')}</span>${esc(d.name)}</span>
-    <span class="s">${esc(d.dept)}${d.pos?' · '+esc(d.pos):''}</span><span class="s code">${esc(d.code)}</span>
-    ${was?'<span class="s">오늘 이미 등록</span>':''}</button>`;
-}
-function vDoc(){
-  const hp=DB.hospByCode[S.hosp];
-  $('ttl').textContent=hp.name;
-  $('crumb').innerHTML=`<button class="chip" data-act="back">${esc(hp.name)} ✕</button><span class="chip acc">선생님</span>`;
-  const docs=DB.docsByHosp[S.hosp]||[];
-  const already=new Set(S.visits.filter(v=>v.date===S.date&&v.hosp===S.hosp).map(v=>v.doc.code));
-  let h=`<div class="q">오늘 만난 선생님을 누르세요</div>
-    <div class="sec"><span class="lbl">이 병원 선생님 <b>${docs.length}명</b> · 누른 사람만 등록됩니다</span></div>
-    <div class="grid g2">${docs.map(d=>docCard(d,already)).join('')}</div>`;
-  $('body').innerHTML=h;
-  const n=S.sel.size;
-  setFoot(`<button class="btn" data-act="selAll" style="flex:.6">전체 선택</button><button class="btn pri" data-act="docNext" ${n?'':'disabled'}>${n?n+'명 활동 입력 →':'선생님을 고르세요'}</button>`);
-}
-
-const STEP_Q=['카테고리','품목','활동유형 1','활동유형 2'];
-function curVisit(){return S.visits.find(v=>v.id===S.queue[S.qi])}
-function optsFor(step,d){return step===0?Object.keys(DB.cats):step===1?(DB.cats[d[0]]||[]):step===2?Object.keys(DB.acts):(DB.acts[d[2]]||[])}
-function vAct(){
-  const v=curVisit(),d=S.draft;
-  $('ttl').textContent=v.doc.name+' 선생님';
-  $('crumb').innerHTML=STEP_Q.map((q,i)=>i<d.length?`<button class="chip acc" data-act="toStep" data-v="${i}">${esc(d[i])}</button>`:i===S.step?`<span class="chip">${q} 선택 중</span>`:'').join('');
-  let h='';
-  if(S.queue.length>1)h+='<div class="who">'+S.queue.map((id,i)=>{const x=S.visits.find(v=>v.id===id);return `<span class="chip ${i===S.qi?'acc':x.act?'done':''}">${x.act&&i!==S.qi?'✓ ':''}${esc(x.doc.name)}</span>`}).join('')+'</div>';
-  const hist=S.hist[v.doc.code],prev=hist||S.lastUsed;
-  if(S.step===0&&prev)h+=`<button class="quick" data-act="quick"><b>${hist?'지난 방문과 동일하게':'방금 입력한 내용 그대로'} · 한 번에 입력</b><span class="chips">${prev.map(a=>`<span class="chip">${esc(a)}</span>`).join('')}</span></button>`;
-  const opts=optsFor(S.step,d);
-  const cols=(S.step===1&&opts.length<=6)||S.step===3?'g2':'g3';
-  h+=`<div class="q">${STEP_Q[S.step]}</div>`;
-  h+=opts.length?`<div class="grid ${cols}">`+opts.map(o=>`<button class="tile ${d[S.step]===o?'on':''}" data-act="pick" data-v="${esc(o)}">${esc(o)}${S.step===0?`<span class="s">${DB.cats[o].length}개 품목</span>`:''}</button>`).join('')+'</div>':'<div class="empty">엑셀에 이 항목의 하위 목록이 없습니다.</div>';
-  $('body').innerHTML=h;setFoot('');
-}
-function vNext(){
-  const v=curVisit(),rest=S.queue.slice(S.qi+1).map(id=>S.visits.find(x=>x.id===id));
-  $('ttl').textContent='입력 완료';
-  $('crumb').innerHTML=v.act.map(a=>`<span class="chip acc">${esc(a)}</span>`).join('');
-  $('body').innerHTML=`<div class="card"><div class="lbl">입력 완료</div><div class="q">${esc(v.doc.name)} 선생님</div><div class="crumb">${v.act.map(a=>`<span class="chip">${esc(a)}</span>`).join('')}</div></div>
-    <div class="lbl">남은 선생님 ${rest.length}명</div><div class="who">${rest.map(x=>`<span class="chip">${esc(x.doc.name)}</span>`).join('')}</div>
-    <button class="quick" data-act="applyAll"><b>나머지 ${rest.length}명도 같은 내용으로</b><span style="font-size:13px;color:var(--muted)">같은 제품설명을 함께 들은 경우</span></button>`;
-  setFoot(`<button class="btn pri" data-act="nextDoc">${esc(rest[0].doc.name)} 선생님 따로 입력 →</button>`);
-}
-function vReview(){
-  $('ttl').textContent='확인 후 저장';
-  $('crumb').innerHTML=`<span class="chip acc">${S.queue.length}명</span><span class="chip">${esc(S.date)}</span>`;
-  const list=S.queue.map(id=>S.visits.find(v=>v.id===id));
-  $('body').innerHTML='<div class="q">수정은 이름을, 빼려면 삭제를 누르세요</div><div class="hosp">'+list.map(v=>vLine(v,'reEdit','<span class="st ok">수정</span>',hName(v.hosp))).join('')+'</div>';
-  setFoot(`<button class="btn pri" data-act="save">${list.length}건 저장</button>`);
-}
-
-/* ===== 동작 ===== */
-function startQueue(ids){S.queue=ids;S.qi=0;S.step=0;S.draft=[];S.stack=[];
-  loadHistory(ids.map(id=>S.visits.find(v=>v.id===id).doc.code).filter(c=>!S.hist[c])).then(()=>{if(S.screen==='act'&&S.step===0)render()});
-  go('act')}
-function finishOne(vals){const v=curVisit();v.act=vals.slice();S.lastUsed=vals.slice();go(S.qi<S.queue.length-1?'next':'review')}
-async function saveQueue(){
-  const list=S.queue.map(id=>S.visits.find(v=>v.id===id));
-  if(!LIVE){list.forEach(v=>v.dbId=v.dbId||-1);return}
-  const row=v=>({visit_date:v.date,mr_name:S.mr,region:S.region,hospital_code:v.hosp,hospital_name:hName(v.hosp),doctor_code:v.doc.code,doctor_name:v.doc.name,category:v.act[0],product:v.act[1],act1:v.act[2],act2:v.act[3]});
-  const ins=list.filter(v=>!v.dbId),upd=list.filter(v=>v.dbId);
-  if(ins.length){const r=await sb('crm_visits',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(ins.map(row))});r.forEach((x,i)=>ins[i].dbId=x.id)}
-  for(const v of upd)await sb(`crm_visits?id=eq.${v.dbId}`,{method:'PATCH',body:JSON.stringify({...row(v),updated_at:new Date().toISOString()})});
-}
-async function removeVisits(ids){
-  const vs=S.visits.filter(v=>ids.includes(v.id));
-  const dbIds=vs.map(v=>v.dbId).filter(x=>x>0);
-  if(LIVE&&dbIds.length)await sb(`crm_visits?id=in.(${dbIds.join(',')})`,{method:'DELETE'});
-  S.visits=S.visits.filter(v=>!ids.includes(v.id));
-  S.queue=S.queue.filter(id=>!ids.includes(id));
-}
-const A={
-  back,
-  delAsk(e){S.confirmDel=+e.dataset.v;S.confirmAll=false;render()},
-  delCancel(){S.confirmDel=null;render()},
-  async delOk(e){const id=+e.dataset.v;S.confirmDel=null;
-    try{await removeVisits([id]);toast('삭제했습니다')}catch(err){toast('삭제하지 못했습니다. 인터넷 연결을 확인하세요')}
-    if(S.screen==='review'&&!S.queue.length){S.stack=[];S.screen='home'}render()},
-  delAllAsk(){S.confirmAll=true;S.confirmDel=null;render()},
-  delAllCancel(){S.confirmAll=false;render()},
-  async delAllOk(){const ids=S.visits.filter(v=>v.date===S.date).map(v=>v.id);S.confirmAll=false;
-    try{await removeVisits(ids);toast(ids.length+'건 삭제했습니다')}catch(err){toast('삭제하지 못했습니다. 인터넷 연결을 확인하세요')}render()},
-  resetTaps(){taps=0;render()},
-  async resetAll(){taps=0;S.visits=[];const r=S.region,m=S.mr;initState();S.region=r;S.mr=m;if(!LIVE)seedDemo();else await loadVisits().catch(()=>{});render()},
-  setup(){go('setup')},
-  region(e){const n=$('mrName');if(n)S.mr=n.value.trim();S.region=e.dataset.v;render()},
-  async setupDone(){const n=$('mrName');S.mr=n?n.value.trim():S.mr;if(!S.mr){toast('담당자 이름을 넣어주세요');return}
-    store.set('crm_mr',S.mr);store.set('crm_region',S.region);S.stack=[];S.screen='home';
-    try{await loadVisits()}catch(e){toast('방문결과를 불러오지 못했습니다')}render()},
-  async date(e){S.date=e.dataset.v;try{await loadVisits()}catch(err){toast('방문결과를 불러오지 못했습니다')}render()},
-  add(){S.q='';S.pref='';S.dongF='';S.deptF='';S.hosp=null;S.sel=new Set();S.stack=[];go('hosp')},
-  q(e){S.q+=e.dataset.v;S.pref='';render()},
-  qDel(){S.q=[...S.q].slice(0,-1).join('');render()},
-  qClear(){S.q='';render()},
-  pref(e){S.pref=e.dataset.v;if(S.pref)S.q='';render()},
-  dongF(e){S.dongF=e.dataset.v;render()},
-  deptF(e){S.deptF=e.dataset.v;render()},
-  hosp(e){S.hosp=e.dataset.v;S.showNon=false;
-    const already=new Set(S.visits.filter(v=>v.date===S.date&&v.hosp===S.hosp).map(v=>v.doc.code));
-    const t=(DB.docsByHosp[S.hosp]||[]).filter(d=>!already.has(d.code));
-    S.sel=new Set(t.length===1?[t[0].code]:[]);   /* 선생님이 1명뿐이면 미리 선택 */
-    go('doc')},
-  doc(e){const id=e.dataset.v;S.sel.has(id)?S.sel.delete(id):S.sel.add(id);render()},
-  toggleNon(){S.showNon=!S.showNon;render()},
-  selAll(){const already=new Set(S.visits.filter(v=>v.date===S.date&&v.hosp===S.hosp).map(v=>v.doc.code));
-    const all=(DB.docsByHosp[S.hosp]||[]).filter(d=>!already.has(d.code));
-    S.sel=S.sel.size===all.length?new Set():new Set(all.map(d=>d.code));render()},
-  docNext(){const docs=(DB.docsByHosp[S.hosp]||[]).filter(d=>S.sel.has(d.code));
-    startQueue(docs.map(d=>{const v={id:++seq,date:S.date,hosp:S.hosp,doc:d,act:null};S.visits.push(v);return v.id}))},
-  pick(e){S.stack.push(snapshotNav());S.draft=S.draft.slice(0,S.step);S.draft[S.step]=e.dataset.v;
-    if(S.step<3){S.step++;render();$('body').scrollTop=0}else finishOne(S.draft)},
-  toStep(e){S.stack.push(snapshotNav());S.step=+e.dataset.v;S.draft=S.draft.slice(0,S.step);render()},
-  quick(){finishOne(S.hist[curVisit().doc.code]||S.lastUsed)},
-  applyAll(){const vals=curVisit().act;S.queue.slice(S.qi+1).forEach(id=>S.visits.find(v=>v.id===id).act=vals.slice());go('review')},
-  nextDoc(){S.stack.push(snapshotNav());S.qi++;S.step=0;S.draft=[];S.screen='act';render()},
-  reEdit(e){const i=S.queue.indexOf(+e.dataset.v);S.stack.push(snapshotNav());S.qi=i;S.step=0;S.draft=[];S.screen='act';render()},
-  async save(){$('busy').hidden=false;
-    try{await saveQueue();const n=S.queue.length;S.queue=[];S.stack=[];S.screen='home';render();toast(n+'건 저장했습니다')}
-    catch(err){toast('저장하지 못했습니다. 인터넷 연결과 DB 권한을 확인하세요');console.error(err)}
-    finally{$('busy').hidden=true}},
-  editVisit(e){const v=S.visits.find(x=>x.id===+e.dataset.v);
-    if(v.act&&!v.dbId){S.queue=S.visits.filter(x=>x.date===S.date&&x.act&&!x.dbId).map(x=>x.id);S.stack=[];go('review');return}
-    startQueue([v.id])},
-  fillPending(){const vs=S.visits.filter(v=>v.date===S.date&&(!v.act||!v.dbId));
-    const todo=vs.filter(v=>!v.act);
-    if(todo.length)startQueue(vs.map(v=>v.id)); else {S.queue=vs.map(v=>v.id);S.stack=[];go('review')}}
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
-document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
-  if(b.closest('#app')&&!b.hasAttribute('data-nocount'))taps++;
-  const f=A[b.dataset.act];if(f)f(b);
-});
+let RAW = [], VIEW = [], sortK = "score", sortDir = -1, map, layer, stopFlag = false;
+let T5 = store.get("chronic_t5", {});   // ykiho → {d:[질병], s:표시과목}
 
-(async function boot(){
-  $('modeNote').textContent=LIVE?'DB 연결됨: 마스터 데이터와 방문결과를 Supabase에서 읽고 씁니다.':'지금은 예시 데이터입니다. 엑셀을 관리자 페이지로 DB에 올리고 파일 위쪽 연결값을 채우면 실제 데이터로 바뀝니다.';
-  try{await loadMaster()}catch(e){
-    $('body').innerHTML=`<div class="banner err">DB에서 데이터를 불러오지 못했습니다.<br>Supabase 주소·anon 키가 맞는지, SQL(crm_schema.sql)을 실행했는지 확인하세요.<br><small>${esc(e.message)}</small></div>`;return}
-  if(!DB.hospitals.length){$('body').innerHTML='<div class="banner err">병원 데이터가 비어 있습니다. 관리자 페이지에서 엑셀을 먼저 올려주세요.</div>';return}
-  initState();
-  if(!LIVE)seedDemo();
-  if(LIVE&&!S.mr){S.screen='setup'}else{try{await loadVisits()}catch(e){toast('방문결과를 불러오지 못했습니다')}}
-  render();
-})();
+/* ───────── API ───────── */
+const apiBase = () => ($("apiBase").value.trim() || "/api/hira");
+async function api(params){
+  const r = await fetch(apiBase() + "?" + new URLSearchParams(params));
+  let j; try{ j = await r.json(); }catch(e){ throw new Error(`중계 API 응답 오류 (HTTP ${r.status})`); }
+  if(!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+  return j;
+}
+const yrs = d => { if(!d||d.length<8) return ""; const t = new Date(+d.slice(0,4), +d.slice(4,6)-1, +d.slice(6,8)); return +((Date.now()-t)/31557600000).toFixed(1); };
+
+async function loadBasis(){
+  const sido = $("aSido").value, subs = [...document.querySelectorAll(".chk input:checked")].map(x=>x.value);
+  if(!subs.length){ say("진료과목을 하나 이상 고르세요.", true); return; }
+  $("btnBasis").disabled = true; setProg(0);
+  const seen = new Map();
+  try{
+    for(const [si,sub] of subs.entries()){
+      let page = 1, total = 1, got = 0;
+      while(got < total){
+        say(`${SUBNAME[sub]} 목록 ${page}페이지 불러오는 중…`);
+        const j = await api({svc:"basis", sidoCd:sido, clCd:"31", dgsbjtCd:sub, numOfRows:500, pageNo:page});
+        total = j.totalCount; got += j.items.length;
+        j.items.forEach(it => { if(it.ykiho && !seen.has(it.ykiho)) seen.set(it.ykiho, toRow(it, sub)); });
+        setProg(((si + Math.min(got/Math.max(total,1),1)) / subs.length) * 100);
+        if(!j.items.length) break;
+        page++;
+      }
+    }
+    RAW = [...seen.values()];
+    applyT5(); mergeGood();
+    $("srcBadge").textContent = `실데이터 · ${SIDO.find(s=>s[0]===sido)[1]}`; $("srcBadge").style.background = "var(--pri)";
+    say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. 시군구를 고른 뒤 ③ 질병정보를 조회하세요.`);
+    resetFilters(); refreshOpts(); apply();
+    if(isMobile()) $("sgguList").closest(".multi").scrollIntoView({behavior:"smooth", block:"center"});
+  }catch(e){ say("불러오기 실패: " + e.message, true); }
+  $("btnBasis").disabled = false; $("btnTop5").disabled = !RAW.length;
+}
+function toRow(it, sub){
+  return { ykiho:it.ykiho, name:it.yadmNm||"", sido:it.sidoCdNm||"", sggu:it.sgguCdNm||"", emd:it.emdongNm||"", addr:it.addr||"", tel:it.telno||"",
+    subject:guessSubject(it.yadmNm||"", sub), subjEst:true, doctors:+(it.drTotCnt||0), years:yrs(it.estbDd), lat:+(it.YPos||it.yPos||0), lng:+(it.XPos||it.xPos||0),
+    top5:"", looked:false, hp_good:"", dm_good:"" };
+}
+function guessSubject(name, sub){
+  if(/내과/.test(name)) return "내과";
+  if(/가정의학/.test(name)) return "가정의학과";
+  const m = name.match(/(소아청소년과|이비인후과|정형외과|신경과|비뇨의학과|비뇨기과|피부과|안과|산부인과|재활의학과|외과|정신건강의학과|마취통증의학과|영상의학과)/);
+  if(m) return m[1];
+  return SUBNAME[sub] || "";
+}
+function applyT5(){ RAW.forEach(r=>{ const c = T5[r.ykiho]; if(c){ r.top5 = c.d.join("|"); r.looked = true; if(c.s){ r.subject = c.s; r.subjEst = false; } } }); }
+
+async function loadTop5(){
+  const todo = VIEW.filter(r => !r.looked);
+  if(!todo.length){ say("현재 목록은 모두 조회되어 있습니다."); return; }
+  if(todo.length > 1500 && !confirm(`${todo.length.toLocaleString()}곳을 조회합니다. 하루 호출 한도(개발계정 10,000건)를 고려해 시군구로 좁히는 걸 권장합니다. 계속할까요?`)) return;
+  stopFlag = false; $("btnTop5").disabled = true; $("btnStop").style.display = "block";
+  let done = 0, fail = 0, idx = 0, limitHit = false, lastErr = "";
+  const worker = async () => {
+    while(idx < todo.length && !stopFlag){
+      const r = todo[idx++];
+      try{
+        const j = await api({svc:"top5", ykiho:r.ykiho});
+        const it = j.items[0] || {};
+        const d = [1,2,3,4,5].map(n=>it["mfrnIntrsIlnsNm"+n]).filter(Boolean);
+        T5[r.ykiho] = { d, s: it.shwSbjtNm || "" };
+        r.top5 = d.join("|"); r.looked = true; if(it.shwSbjtNm){ r.subject = it.shwSbjtNm; r.subjEst = false; }
+      }catch(e){ fail++; lastErr = e.message; if(/LIMITED_NUMBER/.test(e.message)){ stopFlag = true; limitHit = true; }
+        if(fail >= 8 && done < 12){ stopFlag = true; } }
+      done++; setProg(done/todo.length*100);
+      if(done % 10 === 0){ say(`질병정보 조회 ${done}/${todo.length}${fail?` (실패 ${fail})`:""}`); store.set("chronic_t5", T5); apply(true); }
+    }
+  };
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  store.set("chronic_t5", T5);
+  $("btnTop5").disabled = false; $("btnStop").style.display = "none";
+  if(limitHit) say(`API 호출 한도에 도달해 멈췄습니다 (${done-fail}곳 완료). 한도가 풀린 뒤 다시 누르면 남은 곳부터 이어서 조회합니다.`, true);
+  else if(fail && done - fail === 0) say(`질병정보 조회가 모두 실패했습니다. 원인: ${lastErr} — data.go.kr에서 '병원진료정보조회서비스' 활용신청이 승인됐는지 확인하세요.`, true);
+  else say(`조회 ${stopFlag?"중지":"완료"}: ${done-fail}곳 성공${fail?`, 실패 ${fail}곳 (다시 누르면 실패분만 재시도) · 마지막 오류: ${lastErr}`:""}`, !!fail);
+  apply();
+  if(isMobile() && done - fail > 0) $("secList").scrollIntoView({behavior:"smooth"});
+}
+
+/* ───────── 양호기관 병합 ───────── */
+const SIDO_N = [["서울특별시","서울"],["부산광역시","부산"],["대구광역시","대구"],["인천광역시","인천"],["광주광역시","광주"],["대전광역시","대전"],["울산광역시","울산"],["세종특별자치시","세종"],["경기도","경기"],["강원특별자치도","강원"],["강원도","강원"],["충청북도","충북"],["충청남도","충남"],["전북특별자치도","전북"],["전라북도","전북"],["전라남도","전남"],["경상북도","경북"],["경상남도","경남"],["제주특별자치도","제주"]];
+const nName = s => String(s||"").replace(/[\s·.,\-_]/g,"").replace(/\(주\)|㈜/g,"");
+const nNameLoose = s => nName(String(s||"").replace(/\([^)]*\)/g,""));
+const nAddr = s => { let a = String(s||"").replace(/\s/g,""); for(const [l,sh] of SIDO_N) if(a.startsWith(l)){ a = sh + a.slice(l.length); break; } return a; };
+const prefixLen = (a,b) => { let i = 0; while(i<a.length && i<b.length && a[i]===b[i]) i++; return i; };
+let EVAL = store.get("chronic_eval", {hp:null, dm:null});   // {hp:{rows:[[name,addr]],file,at}, dm:...}
+let EIDX = {};
+function buildIdx(){
+  EIDX = {};
+  ["hp","dm"].forEach(t => {
+    const idx = {strict:{}, loose:{}};
+    (EVAL[t]?.rows||[]).forEach(([n,a]) => { (idx.strict[nName(n)] ||= []).push(nAddr(a)); (idx.loose[nNameLoose(n)] ||= []).push(nAddr(a)); });
+    EIDX[t] = idx;
+  });
+}
+function evalLoaded(){ return !!(EVAL.hp?.rows?.length || EVAL.dm?.rows?.length); }
+function matchEval(t, r){
+  const idx = EIDX[t]; if(!idx) return false;
+  const ra = nAddr(r.addr), cands = idx.strict[nName(r.name)] || idx.loose[nNameLoose(r.name)];
+  if(!cands) return false;
+  if(cands.length === 1){ const a = cands[0]; return !a || prefixLen(a, ra) >= 4 || (r.sggu && a.includes(r.sggu)); }
+  return cands.some(a => prefixLen(a, ra) >= 8);
+}
+function mergeGood(){
+  RAW.forEach(r => { r.hp_good = matchEval("hp", r) ? "Y" : ""; r.dm_good = matchEval("dm", r) ? "Y" : ""; });
+  evalStatus();
+}
+function evalStatus(){
+  const s = t => EVAL[t]?.rows?.length ? `${EVAL[t].rows.length.toLocaleString()}곳 (${EVAL[t].at})` : "없음";
+  if(!evalLoaded()){ $("evalStat").innerHTML = "평가 데이터 없음 → ② 지표는 점수에서 제외하고 나머지로 100점 환산"; return; }
+  const mh = RAW.filter(r=>r.hp_good).length, md = RAW.filter(r=>r.dm_good).length;
+  $("evalStat").innerHTML = `고혈압 <b>${s("hp")}</b> · 당뇨병 <b>${s("dm")}</b><br>현재 불러온 의원 중 매칭: 고혈압 <b>${mh}</b>곳, 당뇨병 <b>${md}</b>곳`;
+}
+// 엑셀/CSV → 2차원 배열
+function readSheet(file){
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = e => { try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array"});
+      let best = [];
+      wb.SheetNames.forEach(n => { const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:false, defval:""}); if(rows.length > best.length) best = rows; });
+      res(best);
+    }catch(err){ rej(err); } };
+    fr.onerror = rej; fr.readAsArrayBuffer(file);
+  });
+}
+// 평가 파일 해석: 기관명·주소·등급 열을 자동으로 찾음
+function parseEval(rows, t){
+  const label = t === "hp" ? "고혈압" : "당뇨";
+  let hi = rows.findIndex((r,i) => i < 30 && r.some(c => /요양기관명|기관명|병원명|의료기관/.test(String(c))));
+  if(hi < 0) throw new Error("기관명 열을 찾지 못했습니다. 심평원에서 받은 원본 파일인지 확인해 주세요.");
+  const H = rows[hi].map(c => String(c).replace(/\s/g,""));
+  const col = re => H.findIndex(c => re.test(c));
+  const ci = { name: col(/요양기관명|기관명|병원명|의료기관/), addr: col(/주소|소재지/), sido: col(/^시도/), sggu: col(/시군구/),
+               item: col(/평가항목|세부항목|^항목/), grade: -1 };
+  const lc = H.findIndex(c => c.includes(label) && !/평가항목|세부항목/.test(c));
+  ci.grade = lc >= 0 ? lc : col(/등급|평가결과|결과|양호/);
+  const out = []; let skipped = 0;
+  for(const r of rows.slice(hi+1)){
+    const name = String(r[ci.name]||"").trim(); if(!name) continue;
+    if(ci.item >= 0 && r[ci.item] && !String(r[ci.item]).includes(label)){ skipped++; continue; }
+    if(ci.grade >= 0){
+      const g = String(r[ci.grade]||"").replace(/\s/g,"");
+      const good = (/양호/.test(g) && !/비양호|미흡|불량/.test(g)) || /^1(등급)?$/.test(g) || /^(Y|O|○|●)$/i.test(g);
+      if(!good){ skipped++; continue; }
+    }
+    const addr = ci.addr >= 0 ? r[ci.addr] : [ci.sido>=0?r[ci.sido]:"", ci.sggu>=0?r[ci.sggu]:""].join(" ");
+    out.push([name, String(addr||"").trim()]);
+  }
+  return { out, skipped, hasGrade: ci.grade >= 0, headers: H };
+}
+async function onEvalFile(t, file){
+  if(!file) return;
+  if(!window.XLSX){ say("엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.", true); return; }
+  $("goodMsg").className = "msg"; $("goodMsg").textContent = "파일 읽는 중…";
+  try{
+    const rows = await readSheet(file);
+    const { out, skipped, hasGrade } = parseEval(rows, t);
+    if(!out.length) throw new Error("양호 기관을 한 곳도 찾지 못했습니다. 파일 내용을 확인해 주세요.");
+    EVAL[t] = { rows: out, file: file.name, at: new Date().toLocaleDateString("ko-KR") };
+    store.set("chronic_eval", EVAL); buildIdx(); mergeGood(); apply();
+    $("goodMsg").textContent = `${t==="hp"?"고혈압":"당뇨병"}: 양호 ${out.length.toLocaleString()}곳 반영${hasGrade?` (등급 미달 ${skipped.toLocaleString()}곳 제외)`:" (등급 열이 없어 목록 전체를 양호로 처리)"}`;
+  }catch(e){ $("goodMsg").className = "msg err"; $("goodMsg").textContent = "읽기 실패: " + e.message; }
+}
+$("goodHp").onchange = e => onEvalFile("hp", e.target.files[0]);
+$("goodDm").onchange = e => onEvalFile("dm", e.target.files[0]);
+$("goodClear").onclick = () => { if(confirm("저장된 고혈압·당뇨 평가 데이터를 지울까요?")){ EVAL = {hp:null, dm:null}; store.set("chronic_eval", EVAL); buildIdx(); mergeGood(); apply(); $("goodMsg").textContent = ""; } };
+buildIdx();
+
+/* ───────── 점수 ───────── */
+function W(){ const w=[1,2,3,4,5].map(i=>+$("w"+i).value); if(typeof evalLoaded==="function" && !evalLoaded()) w[1]=0; const t=w.reduce((a,b)=>a+b,0)||1; return w.map(x=>x/t*100); }
+function score(rows){
+  const [w1,w2,w3,w4,w5] = W(), tA=+$("tA").value, tB=+$("tB").value;
+  rows.forEach(r=>{
+    const t5 = (r.top5||"").split("|").filter(Boolean);
+    r.chronicN = r.looked ? t5.filter(isChronic).length : "";
+    const good = (r.hp_good==="Y"?1:0)+(r.dm_good==="Y"?1:0); r.good = good;
+    const subS = /내과|가정의학/.test(r.subject) ? 1 : /일반의/.test(r.subject) ? .7 : .2;
+    const y = Math.min((+r.years||0)/10,1), d = Math.min((+r.doctors||0)/3,1);
+    r.score = Math.round(w1*((+r.chronicN||0)/5) + w2*(good===2?1:good===1?.6:0) + w3*subS + w4*y + w5*d);
+    r.grade = !r.looked ? "N" : r.score>=tA ? "A" : r.score>=tB ? "B" : "C";
+  });
+}
+
+/* ───────── 필터·정렬 ───────── */
+const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ko"));
+function opts(el, vals){ const cur = el.value; el.innerHTML = `<option value="">전체</option>` + vals.map(v=>`<option>${v}</option>`).join(""); if(vals.includes(cur)) el.value = cur; }
+let SEL = new Set();   // 선택된 시군구 (비어 있으면 전체)
+function renderSggu(){
+  const cnt = {}; RAW.forEach(r => { if(r.sggu) cnt[r.sggu] = (cnt[r.sggu]||0) + 1; });
+  const list = uniq(Object.keys(cnt));
+  [...SEL].forEach(s => { if(!cnt[s]) SEL.delete(s); });
+  $("sgguList").innerHTML = list.length ? list.map(s => `<label><input type="checkbox" value="${esc(s)}" ${SEL.has(s)?"checked":""}>${esc(s)}<span>${cnt[s]}</span></label>`).join("")
+    : `<div class="empty">① 의원 목록을 먼저 불러오세요</div>`;
+  $("sgguList").querySelectorAll("input").forEach(cb => cb.onchange = () => { cb.checked ? SEL.add(cb.value) : SEL.delete(cb.value); $("fEmd").value=""; sgguChanged(); });
+  sgguSummary();
+}
+function sgguSummary(){
+  const n = SEL.size;
+  $("sgguSum").innerHTML = !n ? "전체" : n === 1 ? `<b>${esc([...SEL][0])}</b>` : `<b>${n}곳</b> 선택`;
+}
+function sgguChanged(){ sgguSummary(); refreshEmd(); apply(); }
+function refreshEmd(){
+  const el = $("fEmd");
+  if(SEL.size === 1){ el.disabled = false; opts(el, uniq(RAW.filter(r => SEL.has(r.sggu)).map(r => r.emd))); }
+  else { el.disabled = true; el.innerHTML = `<option value="">${SEL.size ? "시군구 1곳 선택 시 사용" : "전체"}</option>`; }
+}
+function refreshOpts(){
+  renderSggu(); refreshEmd();
+  opts($("fSub"), uniq(RAW.map(r=>r.subject)));
+}
+function resetFilters(){ SEL.clear(); ["fEmd","fSub","fGrade"].forEach(id=>$(id).value=""); $("fQ").value=""; }
+function apply(light){
+  score(RAW);
+  const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
+  VIEW = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub)&&(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.chronicN>0));
+  VIEW.sort((a,b)=>{ if(sortK==="score"&&a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
+    return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
+  render(light);
+}
+
+/* ───────── 렌더 ───────── */
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function render(light){
+  const L2 = VIEW.filter(r=>r.looked), a = L2.filter(r=>r.grade==="A").length;
+  $("kN").textContent = `${L2.length.toLocaleString()} / ${VIEW.length.toLocaleString()}`;
+  $("kA").textContent = L2.length ? a.toLocaleString() : "-";
+  $("kAvg").textContent = L2.length ? Math.round(L2.reduce((s,r)=>s+r.score,0)/L2.length) : "-";
+  const by = {}; VIEW.forEach(r=>{ const k=r.sggu||"(미상)"; (by[k]=by[k]||{A:0,B:0,C:0,N:0,n:0})[r.grade]++; by[k].n++; });
+  const ent = Object.entries(by).sort((x,y)=>y[1].A-x[1].A||y[1].n-x[1].n);
+  $("kTop").textContent = ent.length&&ent[0][1].A ? `${ent[0][0]} (${ent[0][1].A})` : "-";
+  const mx = Math.max(1,...ent.map(e=>e[1].n));
+  $("bars").innerHTML = ent.slice(0,15).map(([k,v])=>`<div class="b" data-s="${esc(k)}"><span>${esc(k)}</span><div class="t">
+    <i style="width:${v.A/mx*100}%;background:var(--a)"></i><i style="width:${v.B/mx*100}%;background:var(--b)"></i><i style="width:${v.C/mx*100}%;background:var(--c)"></i><i style="width:${v.N/mx*100}%;background:var(--line)"></i></div>
+    <span class="sub">${v.n}곳 · A ${v.A}</span></div>`).join("") || `<div class="sub">데이터 없음</div>`;
+  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ SEL = new Set([el.dataset.s]); $("fEmd").value=""; renderSggu(); sgguChanged(); });
+  $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
+  $("btnTop5").textContent = `현재 목록 질병정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
+  document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td class="n">${r.chronicN}</td>
+    <td>${r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d=>!$("oOnly").checked||isChronic(d)).map(d=>`<span class="chip ${isChronic(d)?"hit":"off"}">${esc(d)}</span>`).join(""))||`<span class="sub">${(r.top5||"")?"적합 질환 없음":"자료 없음"}</span>`) : '<span class="sub">미조회</span>'}</td>
+    <td>${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
+  if(isMobile()) renderCards(); else $("cards").innerHTML = "";
+  if(!light){ drawMap(); renderDz(); evalStatus(); }
+}
+const MQ = window.matchMedia("(max-width:700px)");
+const isMobile = () => MQ.matches;
+let CARD_N = 50;
+function renderCards(){
+  const only = $("oOnly").checked, list = VIEW.slice(0, CARD_N);
+  $("cards").innerHTML = list.map(r => {
+    const chips = r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d=>!only||isChronic(d)).map(d=>`<span class="chip ${isChronic(d)?"hit":"off"}">${esc(d)}</span>`).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"자료 없음"}</span>`) : '<span class="sub">질병정보 미조회</span>';
+    const good = [r.hp_good==="Y"?"고혈압":"", r.dm_good==="Y"?"당뇨":""].filter(Boolean).join("·");
+    const tel = (r.tel||"").replace(/[^0-9]/g,"");
+    return `<div class="ccard g${r.grade}">
+      <div class="t1"><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span><span class="nm">${esc(r.name)}</span><span class="sc">${r.looked?r.score:""}</span></div>
+      <div class="t2">${esc(r.sggu)} ${esc(r.emd)} · ${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}${r.looked?` · 적합 질환 ${r.chronicN}개`:""}</div>
+      <div class="t3">${chips}</div>
+      <div class="t4">${good?`<span>평가양호 <b>${good}</b></span>`:""}<span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span></div>
+      <div class="act">${tel?`<a href="tel:${tel}">📞 전화</a>`:""}${r.lat&&r.lng?`<button type="button" data-go="${esc(r.ykiho)}">📍 지도</button>`:""}</div>
+    </div>`;
+  }).join("") + (VIEW.length > CARD_N ? `<button class="btn more-btn" id="moreCards">더 보기 (${(VIEW.length-CARD_N).toLocaleString()}곳 남음)</button>` : "") || '<div class="note">표시할 의원이 없습니다.</div>';
+  $("cards").querySelectorAll("[data-go]").forEach(b => b.onclick = () => goMap(b.dataset.go));
+  const mb = $("moreCards"); if(mb) mb.onclick = () => { CARD_N += 50; renderCards(); };
+}
+let MARK = {};
+function goMap(ykiho){
+  const m = MARK[ykiho]; if(!m || !map) return;
+  $("secMap").scrollIntoView({behavior:"smooth"});
+  setTimeout(() => { map.invalidateSize(); map.setView(m.getLatLng(), 16); m.openPopup(); }, 350);
+}
+function drawMap(){
+  if(!window.L) return;
+  if(!map){ map = L.map("map"); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"}).addTo(map); }
+  if(layer) layer.remove();
+  const cs = getComputedStyle(document.documentElement), col = {A:cs.getPropertyValue("--a"),B:cs.getPropertyValue("--b"),C:cs.getPropertyValue("--c"),N:"#8a94a0"};
+  const pts = VIEW.filter(r=>r.lat&&r.lng).slice(0,3000);
+  MARK = {};
+  layer = L.layerGroup(pts.map(r=>MARK[r.ykiho]=L.circleMarker([r.lat,r.lng],{radius:r.grade==="A"?7:5,color:col[r.grade],fillColor:col[r.grade],fillOpacity:r.grade==="N"?.35:.8,weight:1})
+    .bindPopup(`<b>${esc(r.name)}</b><br>${r.grade==="N"?"질병정보 미조회":`${r.grade}등급 · 지수 ${r.score}`}<br>${esc(r.subject)} · ${esc((r.top5||"").replace(/\|/g,", "))}<br>${esc(r.tel)}`))).addTo(map);
+  if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView([36.5,127.8],7);
+}
+function say(t, err){ $("msg").textContent = t; $("msg").className = "msg" + (err?" err":""); }
+function setProg(p){ $("prog").style.width = Math.min(100,p) + "%"; }
+
+/* ───────── 샘플 (가상 기관, 미리보기용) ───────── */
+function sample(){
+  const areas = [["서울","중랑구",37.606,127.093,["신내동","면목동","상봉동","망우동"]],["서울","노원구",37.654,127.056,["상계동","중계동","하계동","월계동"]],["서울","강서구",37.551,126.850,["화곡동","등촌동","가양동","방화동"]]];
+  const subs = ["내과","내과","내과","가정의학과","일반의"], pool = ["고혈압","당뇨병","감기","이상지질혈증","위식도역류질환","관절염","비염","장염","골다공증","갑상선질환","불면증","천식"];
+  let s = 7; const rnd = () => (s = (s*9301+49297)%233280)/233280, out = [];
+  areas.forEach(([sido,sggu,la,ln,emds],ai)=>{ for(let i=0;i<25;i++){
+    const sub = subs[Math.floor(rnd()*subs.length)], t = new Set();
+    while(t.size<5) t.add(rnd()<(sub==="일반의"?.2:.55) ? pool[Math.floor(rnd()*4)] : pool[Math.floor(rnd()*pool.length)]);
+    out.push({ykiho:`S${ai}${i}`,name:`샘플${sub}의원 ${ai+1}-${String(i+1).padStart(2,"0")}`,sido,sggu,emd:emds[Math.floor(rnd()*emds.length)],addr:`${sido} ${sggu} (샘플)`,tel:"",
+      subject:sub,doctors:1+Math.floor(rnd()*3),years:+(rnd()*25).toFixed(1),top5:[...t].join("|"),looked:i%6!==0,hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
+  }});
+  return out.map(r=>r.looked?r:{...r,top5:""});
+}
+
+/* ───────── 이벤트 ───────── */
+$("aSido").innerHTML = SIDO.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+$("aSido").value = store.get("chronic_sido","110000");
+$("aSido").onchange = () => store.set("chronic_sido", $("aSido").value);
+$("apiBase").value = store.get("chronic_api","");
+$("apiBase").onchange = () => store.set("chronic_api", $("apiBase").value.trim());
+$("btnBasis").onclick = loadBasis;
+$("btnTop5").onclick = loadTop5;
+$("btnStop").onclick = () => { stopFlag = true; say("중지했습니다. 다시 누르면 남은 곳부터 이어서 조회합니다."); };
+$("btnCache").onclick = () => { if(confirm("저장된 질병정보 캐시를 지울까요?")){ T5 = {}; store.set("chronic_t5", T5); RAW.forEach(r=>{r.looked=false;r.top5="";}); apply(); } };
+$("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--acc)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
+$("export").onclick = () => {
+  const cols = ["grade","score","name","sido","sggu","emd","subject","chronicN","top5","hp_good","dm_good","years","doctors","tel","addr"];
+  const csv = "﻿" + [cols.join(",")].concat(VIEW.map(r=>cols.map(c=>`"${String(c==="grade"&&r.grade==="N"?"미조회":r[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = "chronic_targets.csv"; a.click();
+};
+function showW(){ const w=W(); [1,2,3,4,5].forEach(i=>$("w"+i+"v").textContent=Math.round(w[i-1])); }
+["w1","w2","w3","w4","w5"].forEach(id=>$(id).oninput=()=>{showW();apply(true);});
+["w1","w2","w3","w4","w5"].forEach(id=>$(id).onchange=()=>apply());
+[$("tA"),$("tB"),$("fGrade"),$("fSub"),$("fEmd")].forEach(el=>el.onchange=()=>apply());
+$("fQ").oninput = () => { CARD_N = 50; apply(true); };
+$("mSort").onchange = () => { sortK = $("mSort").value; sortDir = sortK==="name"||sortK==="sggu" ? 1 : -1; CARD_N = 50; apply(true); };
+MQ.addEventListener ? MQ.addEventListener("change", () => apply(true)) : MQ.addListener(() => apply(true));
+$("oHide").onchange = () => apply();
+$("oOnly").onchange = () => { $("thTop5").textContent = $("oOnly").checked ? "비대면 적합 질환" : "Top5 질병"; apply(true); };
+$("teleReset").onclick = () => { TELE.forEach(t => TELE_ON[t.id] = t.on); store.set("chronic_tele", TELE_ON); OVR = {}; store.set("chronic_ovr", OVR); KEYS = teleKeys(); renderTele(); apply(); renderDz(); };
+loadTele(); renderTele();
+$("sgguAll").onclick = () => { RAW.forEach(r => r.sggu && SEL.add(r.sggu)); renderSggu(); sgguChanged(); };
+$("sgguNone").onclick = () => { SEL.clear(); renderSggu(); sgguChanged(); };
+document.querySelectorAll("#tbl th").forEach(th=>th.onclick=()=>{ const k=th.dataset.k; sortDir = sortK===k ? -sortDir : -1; sortK=k; apply(true); });
+/* ───────── 지표 설명 ───────── */
+function openHelp(sec){
+  const w = W();
+  document.querySelectorAll(".help .wt").forEach(el => el.textContent = `현재 ${Math.round(w[+el.dataset.wt-1])}점`);
+  $("hgA").textContent = $("tA").value; $("hgB").textContent = $("tB").value;
+  $("helpModal").classList.add("on");
+  document.body.style.overflow = "hidden";
+  const target = document.getElementById("h-" + (sec || "top"));
+  document.querySelectorAll(".help details").forEach(d => d.open = d === target);
+  if(target) setTimeout(() => target.scrollIntoView({behavior:"smooth", block:"start"}), 30);
+}
+function closeHelp(){ $("helpModal").classList.remove("on"); document.body.style.overflow = ""; }
+document.querySelectorAll("[data-help]").forEach(el => el.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); openHelp(el.dataset.help); }));
+$("helpClose").onclick = closeHelp; $("helpOk").onclick = closeHelp;
+$("helpModal").onclick = e => { if(e.target.id === "helpModal") closeHelp(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeHelp(); });
+
+/* ───────── 낮/밤 전환 ───────── */
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  try{ localStorage.setItem("chronic_theme", t); }catch(e){}
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.classList.toggle("on", b.dataset.themeSet === t));
+  if(RAW.length) drawMap();
+}
+document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
+setTheme(document.documentElement.dataset.theme || "light");
+
+showW(); refreshOpts(); apply();
 </script>
-
 </body>
 </html>
