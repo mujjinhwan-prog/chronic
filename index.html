@@ -4,56 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>만성질환 재진 타겟맵</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("chronic_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#1b1f24;--sub:#5b6573;--line:#e3e7ec;--pri:#0b5cad;--a:#0b7a52;--b:#c98a07;--c:#9aa3ad;--err:#c0392b}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--card:#1a1f25;--ink:#e8ecf1;--sub:#9aa5b1;--line:#2a313a;--pri:#5aa2ef;--a:#3fc28e;--b:#e8b43a;--c:#6b7480;--err:#ff7b6b}}
-:root[data-theme="dark"]{--bg:#111418;--card:#1a1f25;--ink:#e8ecf1;--sub:#9aa5b1;--line:#2a313a;--pri:#5aa2ef;--a:#3fc28e;--b:#e8b43a;--c:#6b7480;--err:#ff7b6b}
+/* 낮: 화이트 바탕 · 짙은 녹색/짙은 그레이 메인 · 주황 포인트 */
+:root,:root[data-theme="light"]{
+  --bg:#ffffff;--card:#ffffff;--soft:#f1f6f3;--soft2:#e3ede7;
+  --ink:#262d29;--sub:#5d6862;--line:#d3ddd7;--line2:#a9bdb1;
+  --pri:#1e5a3d;--pri2:#2f7a54;--prit:#ffffff;--btn:#1e5a3d;--btnh:#2f7a54;
+  --head:#1e5a3d;--headt:#ffffff;
+  --acc:#e8701a;--acc-soft:#fdeedf;
+  --a:#e8701a;--b:#4f8a69;--c:#a2ada7;--nbar:#e3ede7;--err:#c0392b;
+  --shadow:0 1px 2px rgba(30,90,61,.06)}
+/* 밤: 같은 계열을 어둡게 */
+:root[data-theme="dark"]{
+  --bg:#111513;--card:#181e1b;--soft:#1e2622;--soft2:#26302b;
+  --ink:#e4ebe7;--sub:#9aa9a1;--line:#2b3631;--line2:#3d4b44;
+  --pri:#5cbf8c;--pri2:#74cf9f;--prit:#ffffff;--btn:#2b7350;--btnh:#348a60;
+  --head:#1f3b2d;--headt:#e4ebe7;
+  --acc:#ff8a3d;--acc-soft:#3a2617;
+  --a:#ff8a3d;--b:#56a77d;--c:#5f6b65;--nbar:#26302b;--err:#ff7b6b;
+  --shadow:none}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
 header{padding:18px 16px 8px;max-width:1280px;margin:0 auto}
 h1{font-size:20px;margin:0 0 4px}
 .sub{color:var(--sub);font-size:13px}
 .wrap{max-width:1280px;margin:0 auto;padding:0 16px 32px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+h1{color:var(--pri)}
+.kpi{border-top:3px solid var(--pri)}
+.kpi:nth-child(2){border-top-color:var(--acc)}
+.kpi:nth-child(2) .v{color:var(--acc)}
+.kpi .v{color:var(--pri)}
+.sec-title{color:var(--pri)}
+.step{color:var(--pri)}
+.btn.pri:hover:not(:disabled){background:var(--btnh);border-color:var(--btnh)}
+.btn:hover:not(:disabled){border-color:var(--line2)}
+select:focus,input[type=text]:focus,input[type=number]:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:var(--acc)}
+input[type=range],input[type=checkbox]{accent-color:var(--acc)}
+tbody tr:nth-child(even){background:var(--soft)}
+tbody tr:hover{background:var(--acc-soft)}
+.theme{position:fixed;right:16px;bottom:16px;z-index:1500;display:flex;background:var(--card);border:1px solid var(--line2);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.theme button{border:0;background:none;color:var(--sub);font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;cursor:pointer}
+.theme button.on{background:var(--btn);color:var(--prit);font-weight:700}
+.theme button:not(.on):hover{color:var(--acc)}
 .row{display:grid;gap:12px}
 .kpis{grid-template-columns:repeat(4,1fr);margin:12px 0}
 .kpi .v{font-size:24px;font-weight:700}
 .kpi .l{color:var(--sub);font-size:12px}
-.main{grid-template-columns:310px 1fr}
+.main{grid-template-columns:310px minmax(0,1fr)}
+.row>*{min-width:0}
 .side label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
-select,input[type=text],input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+select,input[type=text],input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
 .chk{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
 .chk label{display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)}
 .w{display:grid;grid-template-columns:1fr 44px;align-items:center;gap:6px}
 .w span{text-align:right;font-variant-numeric:tabular-nums}
 input[type=range]{width:100%}
 .btn{display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:inherit}
-.btn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+.btn.pri{background:var(--btn);color:var(--prit);border-color:var(--btn)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .full{width:100%;margin-top:8px}
 .step{font-weight:700;margin:14px 0 2px;font-size:13px}
 .step:first-child{margin-top:0}
-.prog{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
-.prog i{display:block;height:100%;width:0;background:var(--pri);transition:width .2s}
+.prog{height:6px;background:var(--soft2);border-radius:4px;overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
 .msg{font-size:12px;color:var(--sub);margin-top:6px;min-height:18px}
 .msg.err{color:var(--err)}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 #map{height:360px;border-radius:10px}
 .bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
-.bars .t{height:14px;background:var(--line);border-radius:4px;overflow:hidden;display:flex}
+.bars .t{height:14px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
+.bars .b:hover span:first-child{color:var(--acc)}
 .bars .t i{display:block;height:100%}
-.tbl{overflow:auto;max-height:520px}
+.tbl{overflow:auto;max-height:520px;border:1px solid var(--line2);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:12.5px}
 th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-th{position:sticky;top:0;background:var(--card);cursor:pointer;color:var(--sub);font-weight:600}
+th{position:sticky;top:0;background:var(--head);cursor:pointer;color:var(--headt);font-weight:600;border-bottom:2px solid var(--acc)}
+th:hover{text-decoration:underline}
 td.n{text-align:right;font-variant-numeric:tabular-nums}
 .g{display:inline-block;min-width:22px;text-align:center;border-radius:6px;padding:1px 6px;color:#fff;font-weight:700;font-size:11px}
-.gA{background:var(--a)}.gB{background:var(--b)}.gC{background:var(--c)}.gN{background:var(--line);color:var(--sub)}
-.chip{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 6px;margin-right:3px;font-size:11px}
-.chip.hit{border-color:var(--a);color:var(--a)}
+.gA{background:var(--a)}.gB{background:var(--b)}.gC{background:var(--c)}.gN{background:var(--soft2);color:var(--sub)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:10px;padding:0 6px;margin-right:3px;font-size:11px;background:var(--card)}
+.chip.hit{border-color:var(--pri2);color:var(--pri2);background:var(--soft);font-weight:600}
 .note{font-size:12px;color:var(--sub);margin-top:8px}
 .badge{display:inline-block;background:var(--c);color:#fff;border-radius:6px;padding:1px 8px;font-size:12px;margin-left:6px;vertical-align:middle}
 .sec-title{font-weight:700;margin:0 0 8px}
@@ -67,7 +103,8 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 .mhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .mhead h2{font-size:18px;margin:0}
 .x{background:none;border:0;font-size:22px;cursor:pointer;color:var(--sub);line-height:1}
-.lead{background:var(--bg);border-radius:10px;padding:12px 14px;margin:10px 0 14px;font-size:13.5px}
+.lead{background:var(--soft);border-left:4px solid var(--acc);border-radius:10px;padding:12px 14px;margin:10px 0 14px;font-size:13.5px}
+.help h3{color:var(--pri)}
 .help details{border:1px solid var(--line);border-radius:10px;margin:8px 0;padding:10px 12px}
 .help details[open]{border-color:var(--pri)}
 .help details summary{display:flex;justify-content:space-between;gap:8px;list-style:none}
@@ -266,6 +303,11 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   </div>
 </div>
 
+<div class="theme" role="group" aria-label="화면 모드">
+  <button type="button" data-theme-set="light">☀ 낮</button>
+  <button type="button" data-theme-set="dark">🌙 밤</button>
+</div>
+
 <script>
 /* ───────── 기본 설정 ───────── */
 const SIDO = [["110000","서울"],["210000","부산"],["220000","인천"],["230000","대구"],["240000","광주"],["250000","대전"],["260000","울산"],["410000","세종"],["310000","경기"],["320000","강원"],["330000","충북"],["340000","충남"],["350000","전북"],["360000","전남"],["370000","경북"],["380000","경남"],["390000","제주"]];
@@ -310,7 +352,7 @@ async function loadBasis(){
     }
     RAW = [...seen.values()];
     applyT5(); mergeGood();
-    $("srcBadge").textContent = `실데이터 · ${SIDO.find(s=>s[0]===sido)[1]}`; $("srcBadge").style.background = "var(--a)";
+    $("srcBadge").textContent = `실데이터 · ${SIDO.find(s=>s[0]===sido)[1]}`; $("srcBadge").style.background = "var(--pri)";
     say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. 시군구를 고른 뒤 ③ 질병정보를 조회하세요.`);
     resetFilters(); refreshOpts(); apply();
   }catch(e){ say("불러오기 실패: " + e.message, true); }
@@ -457,7 +499,7 @@ $("btnBasis").onclick = loadBasis;
 $("btnTop5").onclick = loadTop5;
 $("btnStop").onclick = () => { stopFlag = true; say("중지했습니다. 다시 누르면 남은 곳부터 이어서 조회합니다."); };
 $("btnCache").onclick = () => { if(confirm("저장된 질병정보 캐시를 지울까요?")){ T5 = {}; store.set("chronic_t5", T5); RAW.forEach(r=>{r.looked=false;r.top5="";}); apply(); } };
-$("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--b)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
+$("btnSample").onclick = () => { RAW = sample(); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--acc)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
 $("export").onclick = () => {
   const cols = ["grade","score","name","sido","sggu","emd","subject","chronicN","top5","hp_good","dm_good","years","doctors","tel","addr"];
   const csv = "﻿" + [cols.join(",")].concat(VIEW.map(r=>cols.map(c=>`"${String(c==="grade"&&r.grade==="N"?"미조회":r[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
@@ -486,6 +528,16 @@ document.querySelectorAll("[data-help]").forEach(el => el.addEventListener("clic
 $("helpClose").onclick = closeHelp; $("helpOk").onclick = closeHelp;
 $("helpModal").onclick = e => { if(e.target.id === "helpModal") closeHelp(); };
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeHelp(); });
+
+/* ───────── 낮/밤 전환 ───────── */
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  try{ localStorage.setItem("chronic_theme", t); }catch(e){}
+  document.querySelectorAll("[data-theme-set]").forEach(b => b.classList.toggle("on", b.dataset.themeSet === t));
+  if(RAW.length) drawMap();
+}
+document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
+setTheme(document.documentElement.dataset.theme || "light");
 
 showW(); refreshOpts(); apply();
 </script>
