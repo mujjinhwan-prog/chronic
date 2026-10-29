@@ -265,7 +265,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <dt>무엇을 보나</dt><dd>심평원 적정성평가 등급: 고혈압·당뇨병(1~5등급), 만성폐쇄성폐질환(1~5등급), 천식(양호 공개)</dd>
         <dt>왜 중요한가</dt><dd>평가 핵심 지표가 방문 지속·처방 지속 환자 비율이라, 재진 환자를 꾸준히 관리한다는 공식 확인입니다.</dd>
         <dt>점수 계산</dt><dd>고혈압·당뇨 등급 최대 75% (1등급 75%, 2등급 56%, 3등급 38%, 4등급 19%, 5등급 0) + COPD 등급 최대 25% + 천식 양호 25%, 합계 최대 100%. 평가 대상이 아닌 의원은 0입니다(평가를 받을 만큼 해당 환자가 많지 않다는 뜻). 1~2등급·양호에 🏅 배지.</dd>
-        <dt>데이터</dt><dd>심평원 병원평가정보서비스 API (getHospAsmInfo1). API가 안 될 때는 평가 엑셀을 data 폴더에 올리는 보조 방법도 있습니다.</dd>
+        <dt>데이터</dt><dd>심평원 병원평가정보서비스 API (getHospAsmInfo1). ③ 상세정보 조회 때 의원마다 자동으로 받아옵니다.</dd>
       </dl>
     </details>
 
@@ -288,17 +288,6 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       </dl>
     </details>
 
-    <h3 id="h-evalhow">평가 엑셀 받는 방법 (고혈압·당뇨·COPD·천식)</h3>
-    <ul>
-      <li>평가결과 <b>보고서(PDF)</b>는 전국 통계라 의원별 등급이 없습니다. 의원별 등급은 <b>상세검색 결과 엑셀</b>로 받아야 합니다.</li>
-      <li>심평원 누리집 <b>병원평가</b> 상세검색 화면에서 평가항목 <b>만성질환</b> → 세부항목 <b>고혈압</b> 선택</li>
-      <li>지역은 비워 두거나(전국) 필요한 시도만 선택 → <b>검색</b></li>
-      <li>조회 결과가 나오면 <b>다운로드(엑셀)</b> 버튼이 활성화됩니다</li>
-      <li>세부항목 <b>당뇨병</b>으로 바꿔 같은 방법으로 받기</li>
-      <li>만성폐쇄성폐질환, 천식도 같은 화면에서 세부항목만 바꿔 받기</li>
-      <li>받은 파일 이름을 <code>eval_hp.xls</code>(고혈압), <code>eval_dm.xls</code>(당뇨병), <code>eval_copd.xls</code>(COPD), <code>eval_ast.xls</code>(천식)으로 바꿔 GitHub 저장소의 <b>data 폴더</b>에 업로드 → 모든 사용자에게 자동 적용 (1년에 한 번 평가 결과가 나오면 같은 이름으로 덮어쓰기)</li>
-      <li>올리기 전에 '관리자: 파일 미리 확인'에 넣어 보면 몇 곳이 매칭되는지 내 화면에서만 먼저 확인할 수 있습니다.</li>
-    </ul>
 
     <h3 id="h-tele">비대면 적합 질환 기준</h3>
     <ul>
@@ -328,7 +317,6 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <ul>
       <li><b>MR 현장 확인</b>: A등급 의원 방문 시 만성질환 환자 비중, 비대면 진료 운영 여부를 CRM에 기록 → 몇 달 뒤 점수와 비교해 가중치 조정</li>
       <li><b>사내 처방 데이터 결합</b>: 의원별 만성질환 약 처방 건수가 있다면 가장 직접적인 재진 지표</li>
-      <li><b>양호기관 목록 반영</b>: 심평원 평가 엑셀을 올리면 ④ 지표가 채워집니다</li>
       <li><b>지역별 실제 비대면 이용량</b>: 국민건강보험공단에 시군구별 비대면 진료 청구 건수를 공공데이터 제공신청하면 가장 직접적인 지역 지표가 됩니다</li>
     </ul>
     <div style="text-align:right;margin:14px 0 10px"><button class="btn pri" id="helpOk">확인</button></div>
@@ -401,18 +389,10 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       </details>
       <hr>
       <details id="evalBox">
-        <summary>만성질환 평가 결과 반영 (고혈압·당뇨·COPD·천식) <button class="q" data-help="evalhow" title="받는 방법">?</button></summary>
+        <summary>만성질환 평가 결과 반영 (고혈압·당뇨·COPD·천식) <button class="q" data-help="w4" title="지표 설명">?</button></summary>
         <div class="note"><b>자동</b>: ③ 상세정보 조회 때 심평원 병원평가 API에서 <b>고혈압·당뇨병 등급(1~5), COPD 등급(1~5), 천식 양호 여부</b>를 의원마다 받아옵니다. 1~2등급·양호 의원에 🏅 배지가 붙습니다. (data.go.kr '병원평가정보서비스' 활용신청 필요)</div>
         <div class="evalstat" id="evalStat">평가 데이터 확인 중…</div>
-        <div class="note"><b>보조(파일)</b>: API가 안 될 때만 쓰는 방법 — 관리자가 GitHub 저장소의 <b>data 폴더</b>에 <code>eval_hp</code>(고혈압), <code>eval_dm</code>(당뇨병), <code>eval_copd</code>(COPD), <code>eval_ast</code>(천식) 파일(.xls)을 올리면 누가 어디서 열든 같은 데이터가 적용됩니다. (.xlsx, .csv도 가능) 의원 이름 옆에 <span class="eb" style="margin:0">🏅 고혈압 우수</span> 배지가 붙습니다.<br>※ 이상지질혈증은 심평원이 별도 적정성평가를 하지 않아 우수기관 자료가 없습니다.</div>
-        <details style="margin-top:6px"><summary style="font-weight:600;font-size:12px">관리자: 올리기 전에 파일 미리 확인 (내 화면에만 임시 적용)</summary>
-          <label>고혈압 평가 파일</label><input type="file" data-ev="hp" accept=".xls,.xlsx,.csv">
-          <label>당뇨병 평가 파일</label><input type="file" data-ev="dm" accept=".xls,.xlsx,.csv">
-          <label>만성폐쇄성폐질환(COPD) 평가 파일</label><input type="file" data-ev="copd" accept=".xls,.xlsx,.csv">
-          <label>천식 평가 파일</label><input type="file" data-ev="ast" accept=".xls,.xlsx,.csv">
-          <button class="btn full" id="goodClear">임시 적용 지우기 (공용 데이터로 되돌리기)</button>
-        </details>
-        <div class="msg" id="goodMsg"></div>
+        <div class="note">※ 이상지질혈증은 심평원이 별도 적정성평가를 하지 않아 등급 자료가 없습니다.</div>
       </details>
       <hr>
       <details>
@@ -444,7 +424,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
         <div class="tbl"><table id="tbl"><thead><tr>
           <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
-          <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th><th data-k="hdGrd" class="c-ev">평가등급</th>
+          <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th>
           <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
         </tr></thead><tbody></tbody></table></div>
         <div class="cards" id="cards"></div>
@@ -708,11 +688,10 @@ function mergeGood(){
   evalStatus();
 }
 function evalStatus(){
-  if(!evalLoaded()){ $("evalStat").innerHTML = "공용 평가 데이터 없음 (data 폴더에 파일이 없음) → ④ 지표는 점수에서 제외"; return; }
-  $("evalStat").innerHTML = EV_T.map(({t,short}) => {
-    const d = EVAL[t]; if(!d?.rows?.length) return `${short} <span class="est">없음</span>`;
-    return `${short} <b>${d.rows.length.toLocaleString()}</b>곳 · 매칭 <b>${RAW.filter(r=>r[t+"_good"]).length}</b> <span class="est">${d.src==="local"?"임시(내 화면만)":"공용"} · ${esc(d.at)}</span>`;
-  }).join("<br>");
+  const L = RAW.filter(r => r.looked), A = L.filter(r => r.asm && !r.asm.none);
+  if(!L.length){ $("evalStat").innerHTML = "③ 상세정보 조회 후 표시됩니다"; return; }
+  const hd = A.filter(r => r.asm.hd && r.asm.hd <= 2).length, cp = A.filter(r => r.asm.copd && r.asm.copd <= 2).length, as = A.filter(r => r.asm.ast).length;
+  $("evalStat").innerHTML = `조회 <b>${L.length}</b>곳 중 평가등급 <b>${A.length}</b>곳 · 🏅 고혈압·당뇨 1~2등급 <b>${hd}</b> · COPD 1~2등급 <b>${cp}</b> · 천식 양호 <b>${as}</b>`;
 }
 // 엑셀/CSV → 2차원 배열
 function sheetRows(buf){
@@ -778,8 +757,6 @@ async function onEvalFile(t, file){
     $("goodMsg").textContent = `미리보기: ${EV_T.find(x=>x.t===t).name} 우수 ${out.length.toLocaleString()}곳${hasGrade?` (등급 미달 ${skipped.toLocaleString()}곳 제외)`:" (등급 열이 없어 목록 전체를 양호로 처리)"}. 매칭이 맞으면 이 파일을 GitHub data 폴더에 eval_${t}.${file.name.split(".").pop()} 이름으로 올리세요.`;
   }catch(e){ $("goodMsg").className = "msg err"; $("goodMsg").textContent = "읽기 실패: " + e.message; }
 }
-document.querySelectorAll("input[data-ev]").forEach(el => el.onchange = e => onEvalFile(el.dataset.ev, e.target.files[0]));
-$("goodClear").onclick = () => { EVAL = {hp:null, dm:null, copd:null, ast:null}; $("goodMsg").textContent = ""; loadSharedEval(); };
 try{ localStorage.removeItem("chronic_eval"); }catch(e){}   // 예전 버전의 개인 저장분 정리
 buildIdx();
 
@@ -912,7 +889,7 @@ function render(light){
     <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
     <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
     <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
-    <td class="c-ev">${r.looked || evalLoaded() ? evalTxt(r) : ""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
+    <td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
   const L3 = VIEW.filter(r => r.looked), hasT5 = L3.some(r => !r.noData);
   const hasEv = evalLoaded() || L3.some(r => r.asm);
   $("tbl").classList.toggle("no-t5", !hasT5); $("tbl").classList.toggle("no-ev", !hasEv);
