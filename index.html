@@ -108,7 +108,7 @@ input[type=range]{width:100%}
 .msg{font-size:12px;color:var(--sub);margin-top:6px;min-height:18px}
 .msg.err{color:var(--err)}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
-#map{height:360px;border-radius:10px}
+#map{height:min(68vh,640px);min-height:460px;border-radius:10px}
 .bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
 .bars .t{height:14px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
 .bars .b:hover span:first-child{color:var(--acc)}
@@ -180,7 +180,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   .card{padding:12px}
   .kpis{gap:8px;margin:10px 0}
   .kpi .v{font-size:20px}
-  #map{height:260px}
+  #map{height:300px;min-height:0}
   .tbl{display:none}
   .cards{display:block}
   .mobile-only{display:block}
@@ -419,7 +419,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     </aside>
 
     <section class="row" style="align-content:start">
-      <div class="row two" style="grid-template-columns:1fr 1fr">
+      <div class="row two" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
         <div class="card" id="secMap"><div class="sec-title">지도</div><div id="map"></div></div>
         <div class="card"><div class="sec-title">시군구별 의원 수 (등급 구성)</div><div class="bars" id="bars"></div>
           <div class="note"><span class="g gA">A</span> <span class="g gB">B</span> <span class="g gC">C</span> <span class="g gN">미조회</span> · 막대를 누르면 해당 시군구로 필터</div></div>
