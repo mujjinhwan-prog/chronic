@@ -405,6 +405,8 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <hr>
       <details>
         <summary>설정</summary>
+        <label>브이월드 인증키 (지도)</label><input type="text" id="vkey" placeholder="Vercel에 VWORLD_KEY를 넣었으면 비워두세요">
+        <div class="note">브이월드에서 발급받은 키입니다. 비워두면 서버 설정(VWORLD_KEY)을 쓰고, 둘 다 없으면 OpenStreetMap을 씁니다.</div>
         <label>중계 API 주소</label><input type="text" id="apiBase" placeholder="/api/hira">
         <div class="note">이 페이지와 같은 Vercel 프로젝트면 비워두세요.</div>
         <button class="btn full" id="btnCache">상세정보 캐시 비우기</button>
@@ -883,9 +885,65 @@ function goMap(ykiho){
   $("secMap").scrollIntoView({behavior:"smooth"});
   setTimeout(() => { map.invalidateSize(); map.setView(m.getLatLng(), 16); m.openPopup(); }, 350);
 }
+/* ───────── 배경 지도: 브이월드(국토교통부) + OpenStreetMap 대체 ───────── */
+let VKEY = "", BASE = {}, baseCtl = null, curBase = null, userBase = store.get("chronic_base", ""), progBase = false;
+async function loadVkey(){
+  VKEY = ($("vkey").value || "").trim();
+  if(!VKEY){ try{ const r = await fetch(apiBase() + "?svc=config"); const j = await r.json(); VKEY = j.vworldKey || ""; }catch(e){} }
+}
+function buildBases(){
+  const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:"© OpenStreetMap"});
+  BASE = { "OpenStreetMap": osm };
+  if(VKEY){
+    const v = (layer, ext, extra) => L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VKEY}/${layer}/{z}/{y}/{x}.${ext}`,
+      Object.assign({maxZoom:19, minZoom:6, attribution:'© <a href="https://www.vworld.kr" target="_blank">VWorld</a> (국토교통부)'}, extra||{}));
+    const sat = L.layerGroup([v("Satellite","jpeg"), v("Hybrid","png")]);
+    BASE = { "브이월드 기본": v("Base","png"), "브이월드 회색": v("gray","png"), "브이월드 야간": v("midnight","png"), "브이월드 위성": sat, "OpenStreetMap": osm };
+    let errs = 0;
+    [BASE["브이월드 기본"], BASE["브이월드 회색"], BASE["브이월드 야간"]].forEach(l => l.on("tileerror", () => {
+      if(++errs === 8 && curBase !== "OpenStreetMap"){ setBase("OpenStreetMap"); say("브이월드 지도를 불러오지 못해 OpenStreetMap으로 바꿨습니다. 인증키와 등록 도메인(chronic-flame.vercel.app)을 확인하세요.", true); }
+    }));
+  }
+}
+function defaultBase(){
+  if(userBase && BASE[userBase]) return userBase;
+  if(!VKEY) return "OpenStreetMap";
+  return document.documentElement.dataset.theme === "dark" ? "브이월드 야간" : "브이월드 기본";
+}
+function setBase(name){
+  if(!map || !BASE[name]) return;
+  Object.values(BASE).forEach(l => { if(map.hasLayer(l)) map.removeLayer(l); });
+  progBase = true; BASE[name].addTo(map); progBase = false; curBase = name;
+  if(layer) layer.bringToFront?.();
+}
+function addBaseCtl(){
+  baseCtl = L.control.layers(BASE, null, {position:"topright", collapsed:true}).addTo(map);
+  // 사용자가 직접 고른 지도만 기억 (프로그램이 바꾼 것은 저장하지 않음)
+  baseCtl.getContainer().addEventListener("change", e => {
+    const lab = e.target.closest("label"); if(!lab) return;
+    const name = lab.textContent.trim(); if(BASE[name]){ userBase = name; store.set("chronic_base", name); }
+  });
+}
+function initMap(){
+  map = L.map("map", {zoomControl:true});
+  buildBases();
+  addBaseCtl();
+  map.on("baselayerchange", e => { curBase = e.name; });
+  setBase(defaultBase());
+}
+async function resetMapBase(){
+  await loadVkey();
+  if(!map) return;
+  const keep = curBase;
+  Object.values(BASE).forEach(l => { if(map.hasLayer(l)) map.removeLayer(l); });
+  if(baseCtl) baseCtl.remove();
+  buildBases();
+  addBaseCtl();
+  setBase(BASE[keep] && keep !== "OpenStreetMap" ? keep : defaultBase());
+}
 function drawMap(){
   if(!window.L) return;
-  if(!map){ map = L.map("map"); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"© OpenStreetMap"}).addTo(map); }
+  if(!map) initMap();
   if(layer) layer.remove();
   const cs = getComputedStyle(document.documentElement), col = {A:cs.getPropertyValue("--a"),B:cs.getPropertyValue("--b"),C:cs.getPropertyValue("--c"),N:"#8a94a0"};
   const pts = VIEW.filter(r=>r.lat&&r.lng).slice(0,3000);
@@ -918,6 +976,8 @@ $("aSido").value = store.get("chronic_sido","110000");
 $("aSido").onchange = () => store.set("chronic_sido", $("aSido").value);
 $("apiBase").value = store.get("chronic_api","");
 $("apiBase").onchange = () => store.set("chronic_api", $("apiBase").value.trim());
+$("vkey").value = store.get("chronic_vkey", "");
+$("vkey").onchange = () => { store.set("chronic_vkey", $("vkey").value.trim()); resetMapBase(); };
 $("btnBasis").onclick = loadBasis;
 $("btnTop5").onclick = loadTop5;
 $("btnStop").onclick = () => { stopFlag = true; say("중지했습니다. 다시 누르면 남은 곳부터 이어서 조회합니다."); };
@@ -978,11 +1038,13 @@ function setTheme(t){
   document.documentElement.dataset.theme = t;
   try{ localStorage.setItem("chronic_theme", t); }catch(e){}
   document.querySelectorAll("[data-theme-set]").forEach(b => b.classList.toggle("on", b.dataset.themeSet === t));
+  if(map && !userBase && VKEY) setBase(defaultBase());
   if(RAW.length) drawMap();
 }
 document.querySelectorAll("[data-theme-set]").forEach(b => b.onclick = () => setTheme(b.dataset.themeSet));
 setTheme(document.documentElement.dataset.theme || "light");
 
+loadVkey().then(() => { if(map) resetMapBase(); });
 showW(); refreshOpts(); apply();
 </script>
 </body>
