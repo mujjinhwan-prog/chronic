@@ -7,6 +7,7 @@
 //         /api/hira?svc=top5&ykiho=...   (질병 Top5)
 //         /api/hira?svc=dtl&ykiho=...    (진료시간)
 //         /api/hira?svc=spc&ykiho=...    (과목별 전문의)
+//         /api/hira?svc=asm&ykiho=...    (병원평가 등급)
 //         /api/hira?svc=ping   → 실행 지역·사용 주소 확인 (진단용)
 //         /api/hira?svc=config → 지도용 브이월드 키 (Vercel 환경변수 VWORLD_KEY)
 // API 주소가 바뀌면 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
@@ -25,6 +26,11 @@ const SERVICES = {
     url: process.env.TOP5_URL || "https://apis.data.go.kr/B551182/hospDiagInfoService1/getClinicTop5List1",
     params: ["ykiho"],
     ttl: 604800, // 상위질병: 일주일 캐시 (1년치 집계라 자주 안 바뀜)
+  },
+  asm: {   // 병원평가정보서비스 > 병원평가상세등급조회 (고혈압·당뇨 asmGrd24, COPD asmGrd17, 천식 asmGrd16 …)
+    url: process.env.ASM_URL || "https://apis.data.go.kr/B551182/hospAsmInfoService1/getHospAsmInfo1",
+    params: ["ykiho", "pageNo", "numOfRows"],
+    ttl: 604800,
   },
   dtl: {   // 의료기관별상세정보서비스 > 세부정보 (진료시간)
     url: process.env.DTL_URL || "https://apis.data.go.kr/B551182/MadmDtlInfoService2.8/getDtlInfo2.8",
@@ -86,6 +92,7 @@ export async function GET(req) {
       top5: SERVICES.top5.url,
       dtl: SERVICES.dtl.url,
       spc: SERVICES.spc.url,
+      asm: SERVICES.asm.url,
     }, 200, headers);
   }
 
@@ -94,7 +101,7 @@ export async function GET(req) {
   }
 
   const svc = SERVICES[q.get("svc")];
-  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, ping, config 중 하나" }, 400, headers);
+  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, asm, ping, config 중 하나" }, 400, headers);
 
   let key = process.env.DATA_GO_KR_KEY || "";
   if (!key) return json({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }, 500, headers);
