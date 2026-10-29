@@ -67,6 +67,8 @@ table.no-t5 .c-t5,table.no-ev .c-ev{display:none}
 .hb{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;margin-right:2px;background:var(--soft2);color:var(--pri)}
 .hb.on{background:var(--acc-soft);color:var(--acc)}
 .pct{color:var(--sub);font-size:11.5px}
+.eb{display:inline-block;margin-left:5px;font-size:11px;font-weight:700;color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc);border-radius:10px;padding:0 6px;white-space:nowrap}
+.ccard .t3 .eb:first-child{margin-left:0}
 .chip.cond{border-color:var(--acc);color:var(--acc);background:var(--acc-soft)}
 .chip.unk{border-style:dashed;color:var(--sub)}
 .tele .grp.c{color:var(--acc)}
@@ -364,6 +366,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <label>기관명 검색</label><input type="text" id="fQ" placeholder="예) 내과">
       <label class="opt"><input type="checkbox" id="oHide">비대면 질환이 0개인 의원 숨기기 (질병정보가 있는 의원만 해당)</label>
       <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
+      <label class="opt" id="oGoodWrap"><input type="checkbox" id="oGood">고혈압·당뇨 우수(양호) 의원만 보기</label>
 
       <hr>
       <details class="tele">
@@ -392,7 +395,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <hr>
       <details id="evalBox">
         <summary>고혈압·당뇨 평가 결과 반영 <button class="q" data-help="evalhow" title="받는 방법">?</button></summary>
-        <div class="note">심평원 병원평가 검색에서 받은 엑셀(XLS)을 그대로 올리세요. 한 번 올리면 다른 지역에도 계속 적용됩니다.</div>
+        <div class="note">심평원 병원평가 검색에서 받은 엑셀(XLS)을 그대로 올리세요. 한 번 올리면 다른 지역에도 계속 적용되고, 의원 이름 옆에 <span class="eb" style="margin:0">🏅 고혈압 우수</span> 배지가 붙습니다.<br>※ 이상지질혈증은 심평원이 별도로 적정성평가를 하지 않아 우수기관 자료가 없습니다.</div>
         <label>고혈압 평가 파일</label><input type="file" id="goodHp" accept=".xls,.xlsx,.csv">
         <label>당뇨병 평가 파일</label><input type="file" id="goodDm" accept=".xls,.xlsx,.csv">
         <div class="evalstat" id="evalStat">평가 데이터 없음 → ② 지표는 점수에서 제외하고 나머지로 100점 환산</div>
@@ -809,7 +812,7 @@ function apply(light){
   const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim()};
   const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub));
   grade(pool);
-  VIEW = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0));
+  VIEW = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0));
   VIEW.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
   render(light);
@@ -818,6 +821,7 @@ function apply(light){
 /* ───────── 렌더 ───────── */
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipHtml = (r, only) => r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d => !only || isSuit(d)).map(d => { const t = tierOf(d); return `<span class="chip ${t==="core"?"hit":t==="cond"?"cond":t==="unk"?"unk":"off"}" title="${TIER_NAME[t]}">${esc(d)}</span>`; }).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"질병정보 없음 (과목·개원·의사 수로만 평가)"}</span>`) : '<span class="sub">미조회</span>';
+const evalBadge = r => (r.hp_good==="Y" ? '<span class="eb" title="심평원 고혈압 적정성평가 양호기관">🏅 고혈압 우수</span>' : "") + (r.dm_good==="Y" ? '<span class="eb" title="심평원 당뇨병 적정성평가 양호기관">🏅 당뇨 우수</span>' : "");
 const hrsHtml = r => { const h = r.hrs; if(!h) return '<span class="sub">-</span>';
   return `<span class="hb ${h.night?"on":""}">야간${h.night>1?" "+h.night:""}</span><span class="hb ${h.sat?"on":""}">토</span><span class="hb ${h.sun?"on":""}">일</span>`; };
 const sdrTxt = r => r.imSdr < 0 ? "-" : `${r.imSdr}명${r.im == null ? '<span class="est">추정</span>' : ""}`;
@@ -838,12 +842,13 @@ function render(light){
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
   $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
-    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
     <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
     <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
     <td class="c-ev">${r.hp_good==="Y"?"고혈압 ":""}${r.dm_good==="Y"?"당뇨":""}</td><td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
   const L3 = VIEW.filter(r => r.looked), hasT5 = L3.some(r => !r.noData);
   $("tbl").classList.toggle("no-t5", !hasT5); $("tbl").classList.toggle("no-ev", !evalLoaded());
+  $("oGoodWrap").style.display = evalLoaded() ? "" : "none"; if(!evalLoaded()) $("oGood").checked = false;
   const dw = $("dataWarn"), nh = L3.filter(r => !r.hrs).length;
   if(L3.length >= 5 && nh / L3.length > 0.8){ dw.style.display = "block"; dw.innerHTML = `⚠ 조회한 ${L3.length}곳 중 ${nh}곳의 <b>진료시간 정보가 없습니다.</b> data.go.kr에서 <b>'의료기관별상세정보서비스'</b> 활용신청이 됐는지, 설정 → API 원본 확인 결과를 확인해 주세요.`; }
   else dw.style.display = "none";
@@ -861,10 +866,11 @@ function renderCards(){
     const tel = (r.tel||"").replace(/[^0-9]/g,"");
     return `<div class="ccard g${r.grade}">
       <div class="t1"><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span><span class="nm">${esc(r.name)}</span><span class="sc">${r.looked?r.score:""}</span></div>
+      ${r.good ? `<div class="t3">${evalBadge(r)}</div>` : ""}
       <div class="t2">${esc(r.sggu)} ${esc(r.emd)} · ${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}${r.pct?` · 상위 ${r.pct}%`:""}</div>
       ${r.looked ? `<div class="t3">${hrsHtml(r)}${r.imSdr>=0?`<span class="hb">전문의 ${r.imSdr}명</span>`:""}</div>` : '<div class="t3"><span class="sub">상세정보 미조회</span></div>'}
       ${r.looked && !r.noData ? `<div class="t3">${chips}</div>` : ""}
-      <div class="t4">${good?`<span>평가양호 <b>${good}</b></span>`:""}<span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span>${r.hrs?.wk?`<span>평일 ${esc(r.hrs.wk)}</span>`:""}</div>
+      <div class="t4"><span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span>${r.hrs?.wk?`<span>평일 ${esc(r.hrs.wk)}</span>`:""}</div>
       <div class="act">${tel?`<a href="tel:${tel}">📞 전화</a>`:""}${r.lat&&r.lng?`<button type="button" data-go="${esc(r.ykiho)}">📍 지도</button>`:""}</div>
     </div>`;
   }).join("") + (VIEW.length > CARD_N ? `<button class="btn more-btn" id="moreCards">더 보기 (${(VIEW.length-CARD_N).toLocaleString()}곳 남음)</button>` : "") || '<div class="note">표시할 의원이 없습니다.</div>';
@@ -885,7 +891,7 @@ function drawMap(){
   const pts = VIEW.filter(r=>r.lat&&r.lng).slice(0,3000);
   MARK = {};
   layer = L.layerGroup(pts.map(r=>MARK[r.ykiho]=L.circleMarker([r.lat,r.lng],{radius:r.grade==="A"?7:5,color:col[r.grade],fillColor:col[r.grade],fillOpacity:r.grade==="N"?.35:.8,weight:1})
-    .bindPopup(`<b>${esc(r.name)}</b><br>${r.grade==="N"?"상세정보 미조회":`${r.grade}등급 · 지수 ${r.score} · 상위 ${r.pct}%`}<br>${esc(r.subject)}${r.hrs?` · ${r.hrs.night?"야간 ":""}${r.hrs.sat?"토 ":""}${r.hrs.sun?"일 ":""}진료`:""}<br>${esc(r.tel)}`))).addTo(map);
+    .bindPopup(`<b>${esc(r.name)}</b>${evalBadge(r)}<br>${r.grade==="N"?"상세정보 미조회":`${r.grade}등급 · 지수 ${r.score} · 상위 ${r.pct}%`}<br>${esc(r.subject)}${r.hrs?` · ${r.hrs.night?"야간 ":""}${r.hrs.sat?"토 ":""}${r.hrs.sun?"일 ":""}진료`:""}<br>${esc(r.tel)}`))).addTo(map);
   if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView([36.5,127.8],7);
 }
 function say(t, err){ $("msg").textContent = t; $("msg").className = "msg" + (err?" err":""); }
@@ -943,6 +949,7 @@ $("fQ").oninput = () => { CARD_N = 50; apply(true); };
 $("mSort").onchange = () => { sortK = $("mSort").value; sortDir = sortK==="name"||sortK==="sggu" ? 1 : -1; CARD_N = 50; apply(true); };
 MQ.addEventListener ? MQ.addEventListener("change", () => apply(true)) : MQ.addListener(() => apply(true));
 $("oHide").onchange = () => apply();
+$("oGood").onchange = () => { CARD_N = 50; apply(); };
 $("oOnly").onchange = () => { $("thTop5").textContent = $("oOnly").checked ? "비대면 적합 질환" : "Top5 질병"; apply(true); };
 $("teleReset").onclick = () => { TELE.forEach(t => TELE_ON[t.id] = t.tier !== "off"); store.set("chronic_tele2", TELE_ON); OVR = {}; store.set("chronic_ovr2", OVR); renderTele(); apply(); renderDz(); };
 loadTele(); renderTele();
