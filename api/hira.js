@@ -8,6 +8,7 @@
 //         /api/hira?svc=dtl&ykiho=...    (진료시간)
 //         /api/hira?svc=spc&ykiho=...    (과목별 전문의)
 //         /api/hira?svc=ping   → 실행 지역·사용 주소 확인 (진단용)
+//         /api/hira?svc=config → 지도용 브이월드 키 (Vercel 환경변수 VWORLD_KEY)
 // API 주소가 바뀌면 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
 //   BASIS_URL = 병원정보서비스 병원기본목록 요청주소
 //   TOP5_URL  = 병원진료정보조회서비스 의원진료상위질병5개 요청주소
@@ -88,8 +89,12 @@ export async function GET(req) {
     }, 200, headers);
   }
 
+  if (q.get("svc") === "config") {   // 화면에서 쓰는 공개 설정 (브이월드 키는 등록 도메인에서만 동작하는 브라우저용 키)
+    return json({ vworldKey: process.env.VWORLD_KEY || "" }, 200, { ...headers, "Cache-Control": "public, s-maxage=3600" });
+  }
+
   const svc = SERVICES[q.get("svc")];
-  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, ping 중 하나" }, 400, headers);
+  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, ping, config 중 하나" }, 400, headers);
 
   let key = process.env.DATA_GO_KR_KEY || "";
   if (!key) return json({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }, 500, headers);
