@@ -57,6 +57,8 @@ tbody tr:hover{background:var(--acc-soft)}
 .multi .mh b{color:var(--acc);font-weight:700}
 .multi .mh button{background:none;border:0;color:var(--pri);font:inherit;font-size:12px;cursor:pointer;padding:0 2px}
 .multi .mh button:hover{color:var(--acc)}
+.multi .ml .grp{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--pri);border-bottom:1px solid var(--line);margin-top:6px;padding:2px 0}
+.multi .ml .grp button{background:none;border:0;color:var(--acc);font:inherit;font-size:11.5px;cursor:pointer}
 .multi .ml{max-height:190px;overflow:auto;padding:4px 6px;display:grid;grid-template-columns:1fr 1fr;gap:0 6px}
 .multi .ml label{display:flex;gap:5px;align-items:center;margin:0;padding:3px 2px;font-size:12.5px;color:var(--ink);cursor:pointer}
 .multi .ml label span{color:var(--sub);font-size:11px;margin-left:auto}
@@ -82,6 +84,7 @@ td.c-ev .em:first-child{margin-left:0}
 .elegend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:0 0 8px;padding:8px 10px;background:var(--soft);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--sub)}
 .elegend b{color:var(--ink);font-weight:700}
 .elegend .em{margin-left:0}
+.vleg{flex-basis:100%}.vleg .vt{margin:0 2px 0 4px}
 .esrc{flex-basis:100%;font-size:11.5px;line-height:1.6}
 .esrcbox{margin:10px 0 0}
 .esrc a{color:var(--pri2)}
@@ -373,10 +376,10 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <h3 id="h-vol">진료 규모 지수 (규모 열)</h3>
     <ul>
       <li>의원별 진료건수·환자 수·약제비는 공개되지 않아, <b>규모를 간접적으로 보여주는 신호</b>를 모아 0~100점으로 만든 추정치입니다. 비대면 잠재 지수(등급)와는 따로 계산합니다.</li>
-      <li><b>의사 수</b> 30 · <b>평가 대상 항목 수</b> 30 (고혈압·당뇨, COPD, 천식, 항생제, 주사제, 약품목수 등 — 평가 대상이 됐다는 것 자체가 일정 환자 수 이상이라는 뜻, 6개 이상 만점) · <b>문전약국 수</b> 20 (반경 100m 약국, 3곳 이상 만점 · 심평원 약국정보서비스) · <b>진료시간</b> 15 (야간·토·일) · <b>개원 연수</b> 5 (20년 만점)</li>
-      <li>데이터가 없는 신호는 그 의원 계산에서 빠집니다. 평가 대상 항목과 진료시간은 ③ 상세정보 조회 후 반영됩니다.</li>
+      <li><b>의사 수</b> 30 · <b>평가 대상 항목 수</b> 30 (고혈압·당뇨, COPD, 천식, 항생제, 주사제, 약품목수 등 — 평가 대상이 됐다는 것 자체가 일정 환자 수 이상이라는 뜻, 6개 이상 만점) · <b>문전약국</b> 20 (반경 100m 약국을 주변 의원 수로 나눠 합산, 1.5곳 몫 이상 만점 · 심평원 약국정보서비스) · <b>진료시간</b> 15 (야간·토·일) · <b>개원 연수</b> 5 (20년 만점)</li>
+      <li>데이터가 없는 신호는 그 의원 계산에서 빠집니다. 심평원 평가 기록이 아예 없는 의원은 개원 2년 미만이거나 만성질환(당뇨·고혈압 등)을 보는 곳이면 '자료 없음'으로 빼고(자료 누락 가능성), 그 밖의 의원(미용·검진 위주 등)은 평가 대상 0개로 계산합니다. 평가 대상 항목과 진료시간은 ③ 상세정보 조회 후 반영됩니다.</li>
       <li><b>대·중·소</b>: 현재 지역 안에서 규모 상위 20% = 대, 다음 40% = 중, 나머지 = 소</li>
-      <li>주의: 메디컬빌딩처럼 의원 여러 곳이 약국을 같이 쓰면 문전약국 수가 부풀 수 있습니다. 회사 거래처 실적과 비교해 가중치를 맞추면 정확도가 올라갑니다.</li>
+      <li>메디컬빌딩·번화가처럼 의원 여러 곳이 약국을 같이 쓰면 약국 1곳을 의원 수만큼 나눠 계산합니다. 다만 ①에서 불러온 과목의 의원만 세므로, 다른 과목 의원이 많은 건물에서는 여전히 조금 높게 나올 수 있습니다. 회사 거래처 실적과 비교해 가중치를 맞추면 정확도가 올라갑니다.</li>
     </ul>
 
     <h3 id="h-source">데이터 출처</h3>
@@ -427,7 +430,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     <aside class="card side" id="secFilter">
       <div class="step">① 시도·시군구·진료과목 고르고 의원 목록 불러오기</div>
       <label>시도</label><select id="aSido"></select>
-      <label>시군구 (여러 곳 선택 가능 · 비우면 시도 전체)</label>
+      <label>시군구 (여러 곳 선택 가능 · 비우면 시도/전국 전체)</label>
       <div class="multi"><div class="mh"><span id="sgguSum">전체</span><span><button type="button" id="sgguAll">모두 선택</button> · <button type="button" id="sgguNone">해제</button></span></div>
         <div class="ml" id="sgguList"></div></div>
       <label>진료과목</label>
@@ -456,6 +459,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <select id="fPartner"><option value="">전체</option><option value="Y">거래처만</option><option value="N">거래처 제외 (신규 발굴)</option></select>
       <label class="opt"><input type="checkbox" id="oHide">비대면 질환이 0개인 의원 숨기기 (질병정보가 있는 의원만 해당)</label>
       <label class="opt"><input type="checkbox" id="oOnly" checked>Top5 열에 적합 질환만 표시</label>
+      <label class="opt"><input type="checkbox" id="oAttach" checked>기업·기관 부속의원 숨기기 (일반 환자 진료가 적은 곳)</label>
       <label class="opt" id="oGoodWrap"><input type="checkbox" id="oGood">평가 우수 의원만 보기 (고혈압·당뇨·COPD·천식 중 하나 이상)</label>
 
       <hr>
@@ -532,6 +536,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
           <span class="em ast"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>천식
           <span>· 마크 옆 <b>1등급·2등급</b>(5단계 중) 또는 <b>양호</b>만 표시 · 심평원 적정성평가는 고혈압과 당뇨병을 한 등급으로 매깁니다</span>
           <span><span class="pb" style="margin:0">🤝 거래처</span> 비대면 진료 거래처</span>
+          <span class="vleg"><b>규모</b> <span class="vt L">대</span> 상위 20% · <span class="vt M">중</span> 다음 40% · <span class="vt S">소</span> 나머지 (불러온 지역 안 순위) · 점수 = 의사 수 30 + 평가 대상 항목 수 30 + 문전약국 20 + 진료시간 15 + 개원 연수 5, 자료 없는 항목은 빼고 계산 · 숫자에 마우스를 올리면 근거 표시</span>
         </div>
         <div class="focusnote" id="focusNote"></div>
         <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
@@ -665,25 +670,29 @@ const yrs = d => { if(!d||d.length<8) return ""; const t = new Date(+d.slice(0,4
 
 const BCACHE = {};   // "시도|시군구|과목" → 받은 기관 목록 (같은 화면에서 다시 받지 않음)
 let LOADED = new Set(), LOADED_SIDO = "", LOADED_SUBS = "";
-const sgguTable = sido => (SGGU[sido] || []);
+// [시군구코드, 이름, 시도코드] — "ALL"이면 전국 전체
+const sgguTable = sido => sido === "ALL" ? SIDO.flatMap(([s]) => (SGGU[s] || []).map(([c,n]) => [c,n,s])) : (SGGU[sido] || []).map(([c,n]) => [c,n,sido]);
+const sidoName = sd => sd === "ALL" ? "전국" : (SIDO.find(s => s[0] === sd) || [, ""])[1];
 const curSubs = () => [...document.querySelectorAll(".chk input:checked")].map(x=>x.value);
 async function loadBasis(){
   const sido = $("aSido").value, subs = curSubs();
   if(!subs.length){ say("진료과목을 하나 이상 고르세요.", true); return; }
   const tbl = sgguTable(sido);
-  const picks = SEL.size ? tbl.filter(([,n]) => SEL.has(n)) : (tbl.length ? tbl : [["", ""]]);   // 비우면 시도 전체
-  const jobs = []; picks.forEach(([code,name]) => subs.forEach(sub => jobs.push({code, name, sub})));
+  // 비우면 시도 전체 (전국이면 시도 17곳을 하나씩 통째로)
+  const picks = SEL.size ? tbl.filter(([,n]) => SEL.has(n)) : sido === "ALL" ? SIDO.map(([s,n]) => ["", n + " 전체", s]) : (tbl.length ? tbl : [["", "", sido]]);
+  if(sido === "ALL" && !SEL.size && !confirm("전국 의원 전체를 불러옵니다.\n과목·지역에 따라 수 분이 걸리고 API 호출이 많습니다. 계속할까요?\n(시군구를 골라 불러오면 훨씬 빠릅니다)")) return;
+  const jobs = []; picks.forEach(([code,name,sd]) => subs.forEach(sub => jobs.push({code, name, sub, sd})));
   $("btnBasis").disabled = true; setProg(0);
   const seen = new Map();
   try{
-    for(const [ji,{code,name,sub}] of jobs.entries()){
-      const key = `${sido}|${code||"*"}|${sub}`;
+    for(const [ji,{code,name,sub,sd}] of jobs.entries()){
+      const key = `${sd}|${code||"*"}|${sub}`;
       if(!BCACHE[key]){
         const items = []; let page = 1, total = 1, fetched = 0;
         while(fetched < total){
-          say(`${name || SIDO.find(s=>s[0]===sido)[1]+" 전체"} · ${SUBNAME[sub]} 불러오는 중… (${ji+1}/${jobs.length})`);
+          say(`${name || sidoName(sd)+" 전체"} · ${SUBNAME[sub]} 불러오는 중… (${ji+1}/${jobs.length})`);
           // 일반의: 진료과목 코드(00)로는 조회되지 않아, 의원 전체를 받은 뒤 이름에 과목이 없는 곳만 남김
-          const q = {svc:"basis", sidoCd:sido, clCd:"31", numOfRows:500, pageNo:page}; if(sub !== "00") q.dgsbjtCd = sub; if(code) q.sgguCd = code;
+          const q = {svc:"basis", sidoCd:sd, clCd:"31", numOfRows:500, pageNo:page}; if(sub !== "00") q.dgsbjtCd = sub; if(code) q.sgguCd = code;
           const j = await api(q);
           total = j.totalCount; items.push(...(sub === "00" ? j.items.filter(it => !guessSubject(it.yadmNm||"", "__")) : j.items));
           fetched += j.items.length;
@@ -701,7 +710,7 @@ async function loadBasis(){
     try{ countPharm(RAW, await loadPharm(sido, picks)); }catch(e){ RAW.forEach(r => r.ph = null); PH_ERR = e.message; }
     applyT5(); mergeGood(); matchPartners();
     LOADED = new Set(RAW.map(r => r.sggu)); LOADED_SIDO = sido; LOADED_SUBS = subs.join(",");
-    const sdn = SIDO.find(s=>s[0]===sido)[1];
+    const sdn = sidoName(sido);
     $("srcBadge").textContent = `실데이터 · ${sdn}${keep.size ? (keep.size === 1 ? " " + [...keep][0] : ` ${keep.size}개 시군구`) : " 전체"}`; $("srcBadge").style.background = "var(--pri)";
     say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. ③ 상세정보를 조회하세요.` + (PH_ERR ? ` (문전약국은 계산 못 함: ${PH_ERR} — data.go.kr '약국정보서비스' 활용신청 필요)` : ""), !!PH_ERR && false);
     resetFilters(); keep.forEach(s => SEL.add(s)); refreshOpts(); apply();
@@ -714,7 +723,7 @@ function markNeed(){
   const need = !RAW.length || sido !== LOADED_SIDO || curSubs().join(",") !== LOADED_SUBS || (SEL.size ? [...SEL].some(s => !LOADED.has(s)) : sgguTable(sido).some(([,n]) => !LOADED.has(n)));
   const n = SEL.size;
   b.classList.toggle("need", need && !!RAW.length);
-  b.textContent = need ? `의원 목록 불러오기 (${n ? `시군구 ${n}곳` : "시도 전체"})` : "불러온 목록 사용 중 ✓";
+  b.textContent = need ? `의원 목록 불러오기 (${n ? `시군구 ${n}곳` : sido === "ALL" ? "전국 전체 · 오래 걸림" : "시도 전체"})` : "불러온 목록 사용 중 ✓";
 }
 function toRow(it, sub){
   return { ykiho:it.ykiho, name:it.yadmNm||"", sido:it.sidoCdNm||"", sggu:it.sgguCdNm||"", emd:it.emdongNm||"", addr:it.addr||"", tel:it.telno||"",
@@ -968,36 +977,42 @@ function grade(pool){
 
 /* ───────── 진료 규모 추정 지수 (진료건수·환자 수·약제비의 간접 신호) ───────── */
 const VW = {dr:30, an:30, ph:20, hr:15, yr:5};
-function asmCount(a){ if(!a) return null; if(a.none) return 0; if(a.n != null) return a.n; return [a.hd,a.copd,a.ast||null,a.abx,a.inj].filter(Boolean).length; }
+// 평가 기록이 아예 없을 때: 개원 2년 미만(아직 평가 전)이거나 만성질환을 보는 의원(자료 누락 가능성)은 "자료 없음"으로 빼고,
+// 그 밖(미용·검진 위주 등)은 실제로 평가 대상이 아닌 것으로 보고 0개로 계산
+function asmCount(a, r){ if(!a) return null;
+  if(a.none) return ((+r?.years||0) < 2 || (r?.coreN||0) > 0 || /당뇨|고혈압|대사증후군/.test(r?.top5||"")) ? null : 0;
+  if(a.n != null) return a.n; return [a.hd,a.copd,a.ast||null,a.abx,a.inj].filter(Boolean).length; }
 function volume(pool){
   pool.forEach(r => {
-    const h = r.hrs, an = r.looked ? asmCount(r.asm) : null;
+    const h = r.hrs, an = r.looked ? asmCount(r.asm, r) : null;
     const xs = {
       dr: Math.min(1, Math.log2(1 + (+r.doctors||0)) / Math.log2(5)),
       an: an == null ? null : Math.min(1, an / 6),
-      ph: r.ph == null ? null : Math.min(1, r.ph / 3),
+      ph: r.phS == null ? null : Math.min(1, r.phS / 1.5),
       hr: h ? Math.min(.4, .08*h.night) + (h.sat?.35:0) + (h.sun?.25:0) : null,
       yr: Math.min(1, (+r.years||0) / 20)
     };
     let s = 0, w = 0; for(const k in VW) if(xs[k] != null){ s += xs[k] * VW[k]; w += VW[k]; }
     r.vol = w ? Math.round(s / w * 100) : 0; r.asmN = an == null ? "" : an;
+    r.volWhy = [`의사 ${+r.doctors||0}명`, `평가 대상 ${an == null ? "자료 없음" : an + "개"}`, `문전약국 ${r.ph == null ? "자료 없음" : r.ph + "곳" + (r.ph ? ` (주변 의원과 나눠 ${r.phS})` : "")}`,
+      `진료시간 ${h ? (h.night ? "야간 " + h.night + "일" : "야간 없음") + (h.sat ? "·토" : "") + (h.sun ? "·일" : "") : "자료 없음"}`, `개원 ${r.years || 0}년`].join(" · ");
   });
   const L = [...pool].sort((a,b) => b.vol - a.vol), n = L.length;
   L.forEach((r,i) => { const rank = L.findIndex(x => x.vol === r.vol), p = (rank + 1) / n; r.volT = p <= .2 ? "L" : p <= .6 ? "M" : "S"; });
 }
 const VT_NAME = {L:"대", M:"중", S:"소"};
-const volHtml = r => r.vol == null ? "" : `${r.vol}<span class="vt ${r.volT}" title="현재 지역 안에서 진료 규모 상위 20%=대, 다음 40%=중, 나머지=소">${VT_NAME[r.volT]}</span>`;
+const volHtml = r => r.vol == null ? "" : `<span title="${esc(r.volWhy||"")}">${r.vol}</span><span class="vt ${r.volT}" title="${esc(r.volWhy||"")}">${VT_NAME[r.volT]}</span>`;
 // 문전약국: 의원 반경 100m 안 약국 수
 const PHC = {}; let PH_ERR = "";
 async function loadPharm(sido, picks){
   const all = [];
-  for(const [code,name] of picks){
-    const key = `${sido}|${code||"*"}`;
+  for(const [code,name,sd] of picks){
+    const key = `${sd}|${code||"*"}`;
     if(!PHC[key]){
       const items = []; let page = 1, total = 1;
       while(items.length < total){
         say(`${name || "시도 전체"} 약국 위치 불러오는 중… (문전약국 계산)`);
-        const q = {svc:"pharm", sidoCd:sido, numOfRows:500, pageNo:page}; if(code) q.sgguCd = code;
+        const q = {svc:"pharm", sidoCd:sd, numOfRows:500, pageNo:page}; if(code) q.sgguCd = code;
         const j = await api(q); total = j.totalCount; items.push(...j.items.map(it => [+(it.YPos||0), +(it.XPos||0)]).filter(([a,b]) => a && b));
         if(!j.items.length) break; page++;
       }
@@ -1005,19 +1020,25 @@ async function loadPharm(sido, picks){
     }
     all.push(...PHC[key]);
   }
-  const seen = new Set(); return all.filter(p => { const k = p.join(","); if(seen.has(k)) return false; seen.add(k); return true; });
+  const seen = new Set(); return all.filter(p => { const k = p[0]+","+p[1]; if(seen.has(k)) return false; seen.add(k); return true; }).map(p => [p[0], p[1], 0]);
 }
 function countPharm(rows, ph){
   const cell = (la,lo) => Math.floor(la/.001) + ":" + Math.floor(lo/.0012), G = {};
   ph.forEach(p => (G[cell(p[0],p[1])] ||= []).push(p));
   const dist = (a,b,c,d) => { const x = (d-b) * 88800, y = (c-a) * 111000; return Math.sqrt(x*x + y*y); };
+  // 약국마다 반경 100m 안 의원 수를 세어, 여러 의원이 함께 쓰는 약국은 나눠서 계산 (메디컬빌딩·번화가 보정)
+  const near = (la, lo, fn) => { const ci = Math.floor(la/.001), cj = Math.floor(lo/.0012);
+    for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) (G[(ci+i)+":"+(cj+j)]||[]).forEach(p => { if(dist(la,lo,p[0],p[1]) <= 100) fn(p); }); };
+  ph.forEach(p => p[2] = 0);
+  rows.forEach(r => { if(r.lat && r.lng) near(r.lat, r.lng, p => p[2]++); });
   rows.forEach(r => {
-    if(!r.lat || !r.lng){ r.ph = null; return; }
-    const ci = Math.floor(r.lat/.001), cj = Math.floor(r.lng/.0012); let n = 0;
-    for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) (G[(ci+i)+":"+(cj+j)]||[]).forEach(p => { if(dist(r.lat,r.lng,p[0],p[1]) <= 100) n++; });
-    r.ph = n;
+    if(!r.lat || !r.lng){ r.ph = null; r.phS = null; return; }
+    let n = 0, s = 0; near(r.lat, r.lng, p => { n++; s += 1 / Math.max(1, p[2]); });
+    r.ph = n; r.phS = Math.round(s * 100) / 100;
   });
 }
+
+const isAttached = r => /부속의원|부속\s*의원|사내의원|의무실/.test(r.name) || (+r.doctors === 0 && /센터|조합|은행|공사|공단|그룹|주식회사|\(주\)/.test(r.name));
 
 /* ───────── 필터·정렬 ───────── */
 const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ko"));
@@ -1026,18 +1047,25 @@ let SEL = new Set();   // 선택된 시군구 (비어 있으면 전체)
 function renderSggu(){
   const sido = $("aSido").value, cnt = {};
   if(sido === LOADED_SIDO) RAW.forEach(r => { if(r.sggu) cnt[r.sggu] = (cnt[r.sggu]||0) + 1; });
-  let list = sgguTable(sido).map(([,n]) => n);
+  const tblE = sgguTable(sido);
+  let list = tblE.map(([,n]) => n);
   if(!list.length) list = uniq(Object.keys(cnt));
   [...SEL].forEach(s => { if(!list.includes(s)) SEL.delete(s); });
-  $("sgguList").innerHTML = list.length ? list.map(s => { const ld = LOADED_SIDO === sido && LOADED.has(s);
-      return `<label class="${SEL.has(s) && !ld ? "nl" : ""}"><input type="checkbox" value="${esc(s)}" ${SEL.has(s)?"checked":""}>${esc(s)}<span>${ld ? (cnt[s]||0) : ""}</span></label>`; }).join("")
+  let lastG = "";
+  $("sgguList").innerHTML = list.length ? list.map((s, i) => { const ld = LOADED_SIDO === sido && LOADED.has(s);
+      let head = "";
+      if(sido === "ALL" && tblE[i] && tblE[i][2] !== lastG){ lastG = tblE[i][2]; const all = SGGU[lastG].every(([,n]) => SEL.has(n));
+        head = `<div class="grp"><span>${esc(sidoName(lastG))}</span><button type="button" data-g="${lastG}">${all ? "해제" : "전체"}</button></div>`; }
+      return head + `<label class="${SEL.has(s) && !ld ? "nl" : ""}"><input type="checkbox" value="${esc(s)}" ${SEL.has(s)?"checked":""}>${esc(s)}<span>${ld ? (cnt[s]||0) : ""}</span></label>`; }).join("")
     : `<div class="empty">시군구 목록이 없습니다. 비워 두고 불러오면 시도 전체를 받습니다.</div>`;
   $("sgguList").querySelectorAll("input").forEach(cb => cb.onchange = () => { cb.checked ? SEL.add(cb.value) : SEL.delete(cb.value); $("fEmd").value=""; renderSggu(); sgguChanged(); });
+  $("sgguList").querySelectorAll("[data-g]").forEach(b => b.onclick = () => { const L = SGGU[b.dataset.g].map(([,n]) => n), all = L.every(n => SEL.has(n));
+    L.forEach(n => all ? SEL.delete(n) : SEL.add(n)); $("fEmd").value=""; renderSggu(); sgguChanged(); });
   sgguSummary(); markNeed();
 }
 function sgguSummary(){
   const n = SEL.size;
-  $("sgguSum").innerHTML = !n ? "시도 전체" : n === 1 ? `<b>${esc([...SEL][0])}</b>` : `<b>${n}곳</b> 선택`;
+  $("sgguSum").innerHTML = !n ? ($("aSido").value === "ALL" ? "전국 전체" : "시도 전체") : n === 1 ? `<b>${esc([...SEL][0])}</b>` : `<b>${n}곳</b> 선택`;
 }
 function sgguChanged(){ sgguSummary(); refreshEmd(); apply(); }
 function refreshEmd(){
@@ -1061,7 +1089,7 @@ function apply(light){
   if(FOCUS && !RAW.some(r => r.sggu === FOCUS && (!SEL.size || SEL.has(r.sggu)))) FOCUS = "";
   const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.sub||r.subject===f.sub));
   grade(pool); volume(pool);   // 등급·규모는 선택한 시군구 전체 기준 (한 곳을 골라 봐도 등급이 바뀌지 않음)
-  VIEW0 = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0)&&(!f.p||(f.p==="Y"?!!r.partner:!r.partner)));
+  VIEW0 = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0)&&(!$("oAttach").checked||!isAttached(r))&&(!f.p||(f.p==="Y"?!!r.partner:!r.partner)));
   VIEW0.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
   VIEW = FOCUS || f.emd ? VIEW0.filter(r => (!FOCUS || r.sggu === FOCUS) && (!f.emd || r.emd === f.emd)) : VIEW0;
@@ -1121,6 +1149,7 @@ function partnerInArea(p){
   if(!RAW.length) return false;
   const txt = (p.sido + p.sggu + p.addr).replace(/\s/g,"");
   if(SEL.size) return [...SEL].some(s => txt.includes(s.replace(/\s/g,"")));
+  if($("aSido").value === "ALL") return true;
   const sd = (SIDO.find(([c]) => c === $("aSido").value) || [])[1];
   const keys = sd === "전남광주" ? ["광주","전남","전라남"] : sd ? [sd] : [];
   return keys.some(k => nAddr(p.sido + p.addr).includes(k) || txt.includes(k));
@@ -1361,7 +1390,7 @@ function sample(){
 }
 
 /* ───────── 이벤트 ───────── */
-$("aSido").innerHTML = SIDO.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+$("aSido").innerHTML = `<option value="ALL">전국 (전체 시도)</option>` + SIDO.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
 $("aSido").value = store.get("chronic_sido","110000");
 $("aSido").onchange = () => { store.set("chronic_sido", $("aSido").value); SEL.clear(); $("fEmd").value = ""; renderSggu(); sgguChanged(); };
 const SUB_SAVED = store.get("chronic_subs", PRIOR);
@@ -1408,6 +1437,7 @@ $("fQ").oninput = () => { CARD_N = 50; apply(true); };
 $("mSort").onchange = () => { sortK = $("mSort").value; sortDir = sortK==="name"||sortK==="sggu" ? 1 : -1; CARD_N = 50; apply(true); };
 MQ.addEventListener ? MQ.addEventListener("change", () => apply(true)) : MQ.addListener(() => apply(true));
 $("oHide").onchange = () => apply();
+$("oAttach").onchange = () => apply();
 $("oGood").onchange = () => { CARD_N = 50; apply(); };
 $("oOnly").onchange = () => { $("thTop5").textContent = $("oOnly").checked ? "비대면 적합 질환" : "Top5 질병"; apply(true); };
 $("teleReset").onclick = () => { TELE.forEach(t => TELE_ON[t.id] = t.tier !== "off"); store.set("chronic_tele2", TELE_ON); OVR = {}; store.set("chronic_ovr2", OVR); renderTele(); apply(); renderDz(); };
