@@ -8,6 +8,7 @@
 //         /api/hira?svc=dtl&ykiho=...    (진료시간)
 //         /api/hira?svc=spc&ykiho=...    (과목별 전문의)
 //         /api/hira?svc=asm&ykiho=...    (병원평가 등급)
+//         /api/hira?svc=pharm&sidoCd=..&sgguCd=..  (약국 위치)
 //         /api/hira?svc=ping   → 실행 지역·사용 주소 확인 (진단용)
 //         /api/hira?svc=config → 지도용 브이월드 키 (Vercel 환경변수 VWORLD_KEY)
 // API 주소가 바뀌면 코드 수정 없이 Vercel 환경변수로 덮어쓸 수 있습니다.
@@ -15,6 +16,8 @@
 //   TOP5_URL  = 병원진료정보조회서비스 의원진료상위질병5개 요청주소
 //   DTL_URL   = 의료기관별상세정보서비스 세부정보 요청주소
 //   SPC_URL   = 의료기관별상세정보서비스 전문과목별 전문의수 요청주소
+//   ASM_URL   = 병원평가정보서비스 요청주소
+//   PHARM_URL = 약국정보서비스 약국기본목록 요청주소
 
 const SERVICES = {
   basis: {
@@ -30,6 +33,11 @@ const SERVICES = {
   asm: {   // 병원평가정보서비스 > 병원평가상세등급조회 (고혈압·당뇨 asmGrd24, COPD asmGrd17, 천식 asmGrd16 …)
     url: process.env.ASM_URL || "https://apis.data.go.kr/B551182/hospAsmInfoService1/getHospAsmInfo1",
     params: ["ykiho", "pageNo", "numOfRows"],
+    ttl: 604800,
+  },
+  pharm: { // 약국정보서비스 > 약국기본목록 (문전약국 계산용 좌표)
+    url: process.env.PHARM_URL || "https://apis.data.go.kr/B551182/pharmacyInfoService/getParmacyBasisList",
+    params: ["pageNo", "numOfRows", "sidoCd", "sgguCd", "emdongNm"],
     ttl: 604800,
   },
   dtl: {   // 의료기관별상세정보서비스 > 세부정보 (진료시간)
@@ -93,6 +101,7 @@ export async function GET(req) {
       dtl: SERVICES.dtl.url,
       spc: SERVICES.spc.url,
       asm: SERVICES.asm.url,
+      pharm: SERVICES.pharm.url,
     }, 200, headers);
   }
 
@@ -101,7 +110,7 @@ export async function GET(req) {
   }
 
   const svc = SERVICES[q.get("svc")];
-  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, asm, ping, config 중 하나" }, 400, headers);
+  if (!svc) return json({ error: "svc는 basis, top5, dtl, spc, asm, pharm, ping, config 중 하나" }, 400, headers);
 
   let key = process.env.DATA_GO_KR_KEY || "";
   if (!key) return json({ error: "Vercel 환경변수 DATA_GO_KR_KEY가 없습니다." }, 500, headers);
