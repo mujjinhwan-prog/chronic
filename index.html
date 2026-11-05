@@ -73,9 +73,11 @@ table.no-t5 .c-t5,table.no-ev .c-ev{display:none}
 .hb{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:0 6px;margin-right:2px;background:var(--soft2);color:var(--pri)}
 .hb.on{background:var(--acc-soft);color:var(--acc)}
 .pct{color:var(--sub);font-size:11.5px}
-.em{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;vertical-align:1px}
-.em i{min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;color:#fff;font-style:normal;font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;letter-spacing:-.3px}
-.em.hd i{background:#d64545}.em.dm i{background:#e08a1e}.em.copd i{background:#2f6fd1}.em.ast i{background:#13948a}
+.em{display:inline-flex;align-items:center;gap:2px;margin-left:6px;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;vertical-align:middle;line-height:1}
+.em .md{width:13px;height:16px;flex:none;margin-top:-2px}
+.em.hd{--m1:#f2c230;--m2:#b8860b;--m3:#fff6c9;--rb1:#d64545;--rb2:#2f6fd1}
+.em.copd{--m1:#4a8ff0;--m2:#1f4fa3;--m3:#e3eeff;--rb1:#1f4fa3;--rb2:#8db8f7}
+.em.ast{--m1:#3fb56b;--m2:#1d7a43;--m3:#e2f7e9;--rb1:#1d7a43;--rb2:#8fd9a8}
 .elegend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding:8px 10px;background:var(--soft);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--sub)}
 .elegend b{color:var(--ink);font-weight:700}
 .elegend .em{margin-left:0}
@@ -299,7 +301,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <dl>
         <dt>무엇을 보나</dt><dd>심평원 적정성평가 등급: 고혈압·당뇨병(1~5등급), 만성폐쇄성폐질환(1~5등급), 천식(양호 공개)</dd>
         <dt>왜 중요한가</dt><dd>평가 핵심 지표가 방문 지속·처방 지속 환자 비율이라, 재진 환자를 꾸준히 관리한다는 공식 확인입니다.</dd>
-        <dt>점수 계산</dt><dd>고혈압·당뇨 등급 최대 75% (1등급 75%, 2등급 56%, 3등급 38%, 4등급 19%, 5등급 0) + COPD 등급 최대 25% + 천식 양호 25%, 합계 최대 100%. 평가 대상이 아닌 의원은 0입니다(평가를 받을 만큼 해당 환자가 많지 않다는 뜻). 1~2등급·양호 의원은 기관명 옆에 질환별 마크(고당·C·천)와 등급이 붙습니다.</dd>
+        <dt>점수 계산</dt><dd>고혈압·당뇨 등급 최대 75% (1등급 75%, 2등급 56%, 3등급 38%, 4등급 19%, 5등급 0) + COPD 등급 최대 25% + 천식 양호 25%, 합계 최대 100%. 평가 대상이 아닌 의원은 0입니다(평가를 받을 만큼 해당 환자가 많지 않다는 뜻). 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 초록 천식)와 등급이 붙습니다.</dd>
         <dt>데이터</dt><dd>심평원 병원평가정보서비스 API (getHospAsmInfo1). ③ 상세정보 조회 때 의원마다 자동으로 받아옵니다.</dd>
       </dl>
     </details>
@@ -446,7 +448,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <hr>
       <details id="evalBox">
         <summary>만성질환 평가 결과 반영 (고혈압·당뇨·COPD·천식) <button class="q" data-help="w4" title="지표 설명">?</button></summary>
-        <div class="note"><b>자동</b>: ③ 상세정보 조회 때 심평원 병원평가 API에서 <b>고혈압·당뇨병 등급(1~5), COPD 등급(1~5), 천식 양호 여부</b>를 의원마다 받아옵니다. 1~2등급·양호 의원은 기관명 옆에 질환별 마크(고당·C·천)와 등급이 붙습니다. (data.go.kr '병원평가정보서비스' 활용신청 필요)</div>
+        <div class="note"><b>자동</b>: ③ 상세정보 조회 때 심평원 병원평가 API에서 <b>고혈압·당뇨병 등급(1~5), COPD 등급(1~5), 천식 양호 여부</b>를 의원마다 받아옵니다. 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 초록 천식)와 등급이 붙습니다. (data.go.kr '병원평가정보서비스' 활용신청 필요)</div>
         <div class="evalstat" id="evalStat">평가 데이터 확인 중…</div>
         <div class="note">※ 이상지질혈증은 심평원이 별도 적정성평가를 하지 않아 등급 자료가 없습니다.</div>
       </details>
@@ -494,9 +496,9 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         </tr></thead><tbody></tbody></table></div>
         <div class="cards" id="cards"></div>
         <div class="elegend" id="evLegend"><b>평가 마크</b>
-          <span class="em hd"><i>고당</i></span>고혈압·당뇨병
-          <span class="em copd"><i>C</i></span>만성폐쇄성폐질환(COPD)
-          <span class="em ast"><i>천</i></span>천식
+          <span class="em hd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>고혈압·당뇨병
+          <span class="em copd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>만성폐쇄성폐질환(COPD)
+          <span class="em ast"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>천식
           <span>· 마크 옆 <b>1등급·2등급</b>(5단계 중) 또는 <b>양호</b>만 표시 · 심평원 적정성평가는 고혈압과 당뇨병을 한 등급으로 매깁니다</span>
           <span><span class="pb" style="margin:0">🤝 거래처</span> 비대면 진료 거래처</span>
           <div class="esrc" id="evSrc"></div>
@@ -1055,7 +1057,7 @@ function renderSrc(){
   const L = RAW.filter(r => r.looked), ats = uniq(L.map(r => r.at)), yms = uniq(L.map(r => r.ym));
   const ymTxt = yms.length ? yms.map(y => `${y.slice(0,4)}년 ${+y.slice(4,6)}월`).join(", ") : "";
   $("evSrc").innerHTML = `<b>자료 출처</b> 건강보험심사평가원 병원평가정보서비스 (공공데이터포털 OpenAPI)<br>`
-    + `<span class="em hd"><i>고당</i></span> ${esc(EVAL_INFO.hd)} · <span class="em copd"><i>C</i></span> ${esc(EVAL_INFO.copd)} · <span class="em ast"><i>천</i></span> ${esc(EVAL_INFO.ast)}`
+    + `<span class="em hd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span> ${esc(EVAL_INFO.hd)} · <span class="em copd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span> ${esc(EVAL_INFO.copd)} · <span class="em ast"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span> ${esc(EVAL_INFO.ast)}`
     + (ats.length ? `<br>이 화면의 등급 조회일: ${ats.join(", ")}` : "")
     + (ymTxt ? ` · 질병 Top5 기준월: ${ymTxt}` : "")
     + ` · <a href="https://www.hira.or.kr" target="_blank" rel="noopener">심평원 병원평가 바로가기</a>`;
@@ -1065,7 +1067,8 @@ function renderSrc(){
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipHtml = (r, only) => r.looked ? (((r.top5||"").split("|").filter(Boolean).filter(d => !only || isSuit(d)).map(d => { const t = tierOf(d); return `<span class="chip ${t==="core"?"hit":t==="cond"?"cond":t==="unk"?"unk":"off"}" title="${TIER_NAME[t]}">${esc(d)}</span>`; }).join("")) || `<span class="sub">${r.top5?"적합 질환 없음":"질병정보 없음 (과목·개원·의사 수로만 평가)"}</span>`) : '<span class="sub">미조회</span>';
 const EM = {hd:["고당","고혈압·당뇨병"], dm:["당","당뇨병"], hp:["고","고혈압"], copd:["C","만성폐쇄성폐질환(COPD)"], ast:["천","천식"]};
-const em = (k, txt) => `<span class="em ${k==="hp"?"hd":k}" title="${esc(EVAL_INFO[k==="hp"||k==="dm"?"hd":k] || EM[k][1])} — ${txt}"><i>${EM[k][0]}</i>${txt}</span>`;
+const MEDAL = '<svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg>';
+const em = (k, txt) => `<span class="em ${k==="hp"?"hd":k}" title="${esc(EVAL_INFO[k==="hp"||k==="dm"?"hd":k] || EM[k][1])} — ${txt}">${MEDAL}${txt}</span>`;
 const evalBadge = r => {
   if(r.asm){ const a = r.asm, b = [];
     if(a.hd && a.hd <= 2) b.push(em("hd", `${a.hd}등급`));
