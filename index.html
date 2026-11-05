@@ -74,14 +74,16 @@ table.no-t5 .c-t5,table.no-ev .c-ev{display:none}
 .hb.on{background:var(--acc-soft);color:var(--acc)}
 .pct{color:var(--sub);font-size:11.5px}
 .em{display:inline-flex;align-items:center;gap:2px;margin-left:6px;font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;vertical-align:middle;line-height:1}
+td.c-ev .em:first-child{margin-left:0}
 .em .md{width:13px;height:16px;flex:none;margin-top:-2px}
 .em.hd{--m1:#f2c230;--m2:#b8860b;--m3:#fff6c9;--rb1:#d64545;--rb2:#2f6fd1}
 .em.copd{--m1:#4a8ff0;--m2:#1f4fa3;--m3:#e3eeff;--rb1:#1f4fa3;--rb2:#8db8f7}
-.em.ast{--m1:#3fb56b;--m2:#1d7a43;--m3:#e2f7e9;--rb1:#1d7a43;--rb2:#8fd9a8}
-.elegend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:10px;padding:8px 10px;background:var(--soft);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--sub)}
+.em.ast{--m1:#f08a2a;--m2:#b4560c;--m3:#fff0e0;--rb1:#b4560c;--rb2:#f7c08a}
+.elegend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin:0 0 8px;padding:8px 10px;background:var(--soft);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--sub)}
 .elegend b{color:var(--ink);font-weight:700}
 .elegend .em{margin-left:0}
-.esrc{flex-basis:100%;border-top:1px dashed var(--line2);padding-top:6px;margin-top:2px;font-size:11.5px;line-height:1.6}
+.esrc{flex-basis:100%;font-size:11.5px;line-height:1.6}
+.esrcbox{margin:10px 0 0}
 .esrc a{color:var(--pri2)}
 .srcs{font-size:11.5px;color:var(--sub);line-height:1.7;margin:4px 0 0;padding-left:16px}
 .eb{display:inline-block;margin-left:5px;font-size:11px;font-weight:700;color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc);border-radius:10px;padding:0 6px;white-space:nowrap}
@@ -301,7 +303,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <dl>
         <dt>무엇을 보나</dt><dd>심평원 적정성평가 등급: 고혈압·당뇨병(1~5등급), 만성폐쇄성폐질환(1~5등급), 천식(양호 공개)</dd>
         <dt>왜 중요한가</dt><dd>평가 핵심 지표가 방문 지속·처방 지속 환자 비율이라, 재진 환자를 꾸준히 관리한다는 공식 확인입니다.</dd>
-        <dt>점수 계산</dt><dd>고혈압·당뇨 등급 최대 75% (1등급 75%, 2등급 56%, 3등급 38%, 4등급 19%, 5등급 0) + COPD 등급 최대 25% + 천식 양호 25%, 합계 최대 100%. 평가 대상이 아닌 의원은 0입니다(평가를 받을 만큼 해당 환자가 많지 않다는 뜻). 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 초록 천식)와 등급이 붙습니다.</dd>
+        <dt>점수 계산</dt><dd>고혈압·당뇨 등급 최대 75% (1등급 75%, 2등급 56%, 3등급 38%, 4등급 19%, 5등급 0) + COPD 등급 최대 25% + 천식 양호 25%, 합계 최대 100%. 평가 대상이 아닌 의원은 0입니다(평가를 받을 만큼 해당 환자가 많지 않다는 뜻). 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 주황 천식)와 등급이 붙습니다.</dd>
         <dt>데이터</dt><dd>심평원 병원평가정보서비스 API (getHospAsmInfo1). ③ 상세정보 조회 때 의원마다 자동으로 받아옵니다.</dd>
       </dl>
     </details>
@@ -448,7 +450,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <hr>
       <details id="evalBox">
         <summary>만성질환 평가 결과 반영 (고혈압·당뇨·COPD·천식) <button class="q" data-help="w4" title="지표 설명">?</button></summary>
-        <div class="note"><b>자동</b>: ③ 상세정보 조회 때 심평원 병원평가 API에서 <b>고혈압·당뇨병 등급(1~5), COPD 등급(1~5), 천식 양호 여부</b>를 의원마다 받아옵니다. 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 초록 천식)와 등급이 붙습니다. (data.go.kr '병원평가정보서비스' 활용신청 필요)</div>
+        <div class="note"><b>자동</b>: ③ 상세정보 조회 때 심평원 병원평가 API에서 <b>고혈압·당뇨병 등급(1~5), COPD 등급(1~5), 천식 양호 여부</b>를 의원마다 받아옵니다. 1~2등급·양호 의원은 기관명 옆에 질환별 훈장(금색 고혈압·당뇨, 파랑 COPD, 주황 천식)와 등급이 붙습니다. (data.go.kr '병원평가정보서비스' 활용신청 필요)</div>
         <div class="evalstat" id="evalStat">평가 데이터 확인 중…</div>
         <div class="note">※ 이상지질혈증은 심평원이 별도 적정성평가를 하지 않아 등급 자료가 없습니다.</div>
       </details>
@@ -488,21 +490,21 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
           <select id="mSort" class="mobile-only" aria-label="정렬">
             <option value="score">지수 높은 순</option><option value="hrsScore">야간·주말 진료 순</option><option value="imSdr">내과 전문의 많은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
           </select></div>
-        <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
-        <div class="tbl"><table id="tbl"><thead><tr>
-          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="name">기관명</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
-          <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th>
-          <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
-        </tr></thead><tbody></tbody></table></div>
-        <div class="cards" id="cards"></div>
         <div class="elegend" id="evLegend"><b>평가 마크</b>
           <span class="em hd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>고혈압·당뇨병
           <span class="em copd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>만성폐쇄성폐질환(COPD)
           <span class="em ast"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>천식
           <span>· 마크 옆 <b>1등급·2등급</b>(5단계 중) 또는 <b>양호</b>만 표시 · 심평원 적정성평가는 고혈압과 당뇨병을 한 등급으로 매깁니다</span>
           <span><span class="pb" style="margin:0">🤝 거래처</span> 비대면 진료 거래처</span>
-          <div class="esrc" id="evSrc"></div>
         </div>
+        <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
+        <div class="tbl"><table id="tbl"><thead><tr>
+          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="name">기관명</th><th data-k="good" class="c-ev">평가</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
+          <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th>
+          <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
+        </tr></thead><tbody></tbody></table></div>
+        <div class="cards" id="cards"></div>
+        <div class="elegend esrcbox"><div class="esrc" id="evSrc"></div></div>
       </div>
     </section>
   </div>
@@ -1099,7 +1101,7 @@ function render(light){
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
   $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
-    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}${pBadge(r)}${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}${pBadge(r)}</td><td class="c-ev">${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
     <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
     <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
     <td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
