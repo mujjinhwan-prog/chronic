@@ -97,6 +97,8 @@ td.c-ev .em:first-child{margin-left:0}
 .dz .st{font-size:11px;font-weight:700}
 .dz .st.y{color:var(--pri2)} .dz .st.n{color:var(--sub)} .dz .st.u{color:var(--acc)}
 .est{color:var(--sub);font-size:10.5px;margin-left:3px}
+.vt{display:inline-block;min-width:18px;text-align:center;font-size:10.5px;font-weight:700;border-radius:5px;padding:0 4px;margin-left:4px;border:1px solid}
+.vt.L{color:#fff;background:var(--pri2);border-color:var(--pri2)}.vt.M{color:var(--pri2);border-color:var(--pri2);background:var(--soft)}.vt.S{color:var(--sub);border-color:var(--line2)}
 .evalstat{font-size:12px;margin-top:6px;padding:6px 8px;border-radius:8px;background:var(--soft)}
 .evalstat b{color:var(--pri)}
 .theme{position:fixed;right:16px;bottom:16px;z-index:1500;display:flex;background:var(--card);border:1px solid var(--line2);border-radius:999px;padding:3px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
@@ -345,11 +347,21 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     </div>
     <div class="sub" style="font-size:12px">점수를 정해진 기준점으로 자르지 않고, <b>지금 선택한 지역 안에서 순위</b>로 등급을 매깁니다. 모두가 높은 점수를 받아도 A는 항상 상위 일부만 됩니다. 비율은 왼쪽 '지수 가중치'에서 바꿀 수 있습니다.</div>
 
+    <h3 id="h-vol">진료 규모 지수 (규모 열)</h3>
+    <ul>
+      <li>의원별 진료건수·환자 수·약제비는 공개되지 않아, <b>규모를 간접적으로 보여주는 신호</b>를 모아 0~100점으로 만든 추정치입니다. 비대면 잠재 지수(등급)와는 따로 계산합니다.</li>
+      <li><b>의사 수</b> 30 · <b>평가 대상 항목 수</b> 30 (고혈압·당뇨, COPD, 천식, 항생제, 주사제, 약품목수 등 — 평가 대상이 됐다는 것 자체가 일정 환자 수 이상이라는 뜻, 6개 이상 만점) · <b>문전약국 수</b> 20 (반경 100m 약국, 3곳 이상 만점 · 심평원 약국정보서비스) · <b>진료시간</b> 15 (야간·토·일) · <b>개원 연수</b> 5 (20년 만점)</li>
+      <li>데이터가 없는 신호는 그 의원 계산에서 빠집니다. 평가 대상 항목과 진료시간은 ③ 상세정보 조회 후 반영됩니다.</li>
+      <li><b>대·중·소</b>: 현재 지역 안에서 규모 상위 20% = 대, 다음 40% = 중, 나머지 = 소</li>
+      <li>주의: 메디컬빌딩처럼 의원 여러 곳이 약국을 같이 쓰면 문전약국 수가 부풀 수 있습니다. 회사 거래처 실적과 비교해 가중치를 맞추면 정확도가 올라갑니다.</li>
+    </ul>
+
     <h3 id="h-source">데이터 출처</h3>
     <ul>
       <li><b>의원 목록·개설일·의사 수·좌표</b>: 건강보험심사평가원 병원정보서비스 (공공데이터포털 OpenAPI) — 조회할 때마다 최신</li>
       <li><b>상위 5개 질병·표시과목</b>: 심평원 병원진료정보조회서비스 — 의원 목록 아래 '평가 마크'에 기준월 표시</li>
       <li><b>진료시간·전문의 수</b>: 심평원 의료기관별상세정보서비스</li>
+      <li><b>문전약국 위치</b>: 심평원 약국정보서비스</li>
       <li><b>평가 등급</b>: 심평원 병원평가정보서비스 — 고혈압·당뇨병은 2024년(2주기 2차) 평가 결과(2025년 12월 공개), COPD·천식은 심평원이 공개한 최신 평가 결과</li>
       <li><b>지도</b>: 브이월드(국토교통부) 또는 OpenStreetMap</li>
       <li><b>비대면 진료 거래처</b>: 회사 내부 명단 (저장소 data/partners.xlsx)</li>
@@ -488,7 +500,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <div class="card" id="secList">
         <div class="sec-title listhd"><span>의원 리스트 <span class="sub" id="cnt"></span> <button class="q" data-help="top" title="지수·등급 설명">?</button></span>
           <select id="mSort" class="mobile-only" aria-label="정렬">
-            <option value="score">지수 높은 순</option><option value="hrsScore">야간·주말 진료 순</option><option value="imSdr">내과 전문의 많은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
+            <option value="score">지수 높은 순</option><option value="vol">진료 규모 큰 순</option><option value="hrsScore">야간·주말 진료 순</option><option value="imSdr">내과 전문의 많은 순</option><option value="years">개원 오래된 순</option><option value="name">기관명 순</option><option value="sggu">시군구 순</option>
           </select></div>
         <div class="elegend" id="evLegend"><b>평가 마크</b>
           <span class="em hd"><svg class="md" viewBox="0 0 16 20" aria-hidden="true"><path d="M3 0h4l2 6H5z" fill="var(--rb1)"/><path d="M9 0h4l-2 6H7z" fill="var(--rb2)"/><circle cx="8" cy="13" r="6.2" fill="var(--m1)" stroke="var(--m2)" stroke-width="1.3"/><path d="M8 9.6l1 2.1 2.3.3-1.7 1.6.4 2.3L8 14.8l-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--m3)"/></svg></span>고혈압·당뇨병
@@ -499,7 +511,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
         </div>
         <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
         <div class="tbl"><table id="tbl"><thead><tr>
-          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="name">기관명</th><th data-k="good" class="c-ev">평가</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
+          <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="vol" title="진료 규모 추정 지수">규모</th><th data-k="name">기관명</th><th data-k="good" class="c-ev">평가</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
           <th data-k="subject">과목</th><th data-k="imSdr">전문의</th><th data-k="hrsScore">진료시간</th><th data-k="suit" class="c-t5">질환 구성</th><th data-k="top5" id="thTop5" class="c-t5">비대면 질환</th>
           <th data-k="years">개원(년)</th><th data-k="doctors">의사</th><th data-k="tel">전화</th><th data-k="addr">주소</th>
         </tr></thead><tbody></tbody></table></div>
@@ -657,11 +669,13 @@ async function loadBasis(){
     }
     const keep = new Set(SEL);
     RAW = [...seen.values()];
+    PH_ERR = "";
+    try{ countPharm(RAW, await loadPharm(sido, picks)); }catch(e){ RAW.forEach(r => r.ph = null); PH_ERR = e.message; }
     applyT5(); mergeGood(); matchPartners();
     LOADED = new Set(RAW.map(r => r.sggu)); LOADED_SIDO = sido; LOADED_SUBS = subs.join(",");
     const sdn = SIDO.find(s=>s[0]===sido)[1];
     $("srcBadge").textContent = `실데이터 · ${sdn}${keep.size ? (keep.size === 1 ? " " + [...keep][0] : ` ${keep.size}개 시군구`) : " 전체"}`; $("srcBadge").style.background = "var(--pri)";
-    say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. ③ 상세정보를 조회하세요.`);
+    say(`의원 ${RAW.length.toLocaleString()}곳을 불러왔습니다. ③ 상세정보를 조회하세요.` + (PH_ERR ? ` (문전약국은 계산 못 함: ${PH_ERR} — data.go.kr '약국정보서비스' 활용신청 필요)` : ""), !!PH_ERR && false);
     resetFilters(); keep.forEach(s => SEL.add(s)); refreshOpts(); apply();
   }catch(e){ say("불러오기 실패: " + e.message, true); }
   $("btnBasis").disabled = false; $("btnTop5").disabled = !RAW.length; markNeed();
@@ -708,7 +722,8 @@ const grdNum = v => { const n = parseInt(String(v||"").replace(/[^0-9]/g,""), 10
 function parseAsm(it){
   if(!it) return { hd:null, copd:null, ast:false, none:true };
   return { hd: grdNum(it.asmGrd24), copd: grdNum(it.asmGrd17), ast: /^(1|Y|양호)$/.test(String(it.asmGrd16||"").trim()),
-           abx: grdNum(it.asmGrd07), inj: grdNum(it.asmGrd08) };
+           abx: grdNum(it.asmGrd07), inj: grdNum(it.asmGrd08),
+           n: ["03","07","08","09","16","17","23","24"].filter(k => grdNum(it["asmGrd"+k]) || /양호/.test(String(it["asmGrd"+k]||""))).length };
 }
 function parseSpc(items){
   if(!items || !items.length) return null;
@@ -923,6 +938,59 @@ function grade(pool){
   });
 }
 
+/* ───────── 진료 규모 추정 지수 (진료건수·환자 수·약제비의 간접 신호) ───────── */
+const VW = {dr:30, an:30, ph:20, hr:15, yr:5};
+function asmCount(a){ if(!a) return null; if(a.none) return 0; if(a.n != null) return a.n; return [a.hd,a.copd,a.ast||null,a.abx,a.inj].filter(Boolean).length; }
+function volume(pool){
+  pool.forEach(r => {
+    const h = r.hrs, an = r.looked ? asmCount(r.asm) : null;
+    const xs = {
+      dr: Math.min(1, Math.log2(1 + (+r.doctors||0)) / Math.log2(5)),
+      an: an == null ? null : Math.min(1, an / 6),
+      ph: r.ph == null ? null : Math.min(1, r.ph / 3),
+      hr: h ? Math.min(.4, .08*h.night) + (h.sat?.35:0) + (h.sun?.25:0) : null,
+      yr: Math.min(1, (+r.years||0) / 20)
+    };
+    let s = 0, w = 0; for(const k in VW) if(xs[k] != null){ s += xs[k] * VW[k]; w += VW[k]; }
+    r.vol = w ? Math.round(s / w * 100) : 0; r.asmN = an == null ? "" : an;
+  });
+  const L = [...pool].sort((a,b) => b.vol - a.vol), n = L.length;
+  L.forEach((r,i) => { const rank = L.findIndex(x => x.vol === r.vol), p = (rank + 1) / n; r.volT = p <= .2 ? "L" : p <= .6 ? "M" : "S"; });
+}
+const VT_NAME = {L:"대", M:"중", S:"소"};
+const volHtml = r => r.vol == null ? "" : `${r.vol}<span class="vt ${r.volT}" title="현재 지역 안에서 진료 규모 상위 20%=대, 다음 40%=중, 나머지=소">${VT_NAME[r.volT]}</span>`;
+// 문전약국: 의원 반경 100m 안 약국 수
+const PHC = {}; let PH_ERR = "";
+async function loadPharm(sido, picks){
+  const all = [];
+  for(const [code,name] of picks){
+    const key = `${sido}|${code||"*"}`;
+    if(!PHC[key]){
+      const items = []; let page = 1, total = 1;
+      while(items.length < total){
+        say(`${name || "시도 전체"} 약국 위치 불러오는 중… (문전약국 계산)`);
+        const q = {svc:"pharm", sidoCd:sido, numOfRows:500, pageNo:page}; if(code) q.sgguCd = code;
+        const j = await api(q); total = j.totalCount; items.push(...j.items.map(it => [+(it.YPos||0), +(it.XPos||0)]).filter(([a,b]) => a && b));
+        if(!j.items.length) break; page++;
+      }
+      PHC[key] = items;
+    }
+    all.push(...PHC[key]);
+  }
+  const seen = new Set(); return all.filter(p => { const k = p.join(","); if(seen.has(k)) return false; seen.add(k); return true; });
+}
+function countPharm(rows, ph){
+  const cell = (la,lo) => Math.floor(la/.001) + ":" + Math.floor(lo/.0012), G = {};
+  ph.forEach(p => (G[cell(p[0],p[1])] ||= []).push(p));
+  const dist = (a,b,c,d) => { const x = (d-b) * 88800, y = (c-a) * 111000; return Math.sqrt(x*x + y*y); };
+  rows.forEach(r => {
+    if(!r.lat || !r.lng){ r.ph = null; return; }
+    const ci = Math.floor(r.lat/.001), cj = Math.floor(r.lng/.0012); let n = 0;
+    for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) (G[(ci+i)+":"+(cj+j)]||[]).forEach(p => { if(dist(r.lat,r.lng,p[0],p[1]) <= 100) n++; });
+    r.ph = n;
+  });
+}
+
 /* ───────── 필터·정렬 ───────── */
 const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"ko"));
 function opts(el, vals){ const cur = el.value; el.innerHTML = `<option value="">전체</option>` + vals.map(v=>`<option>${v}</option>`).join(""); if(vals.includes(cur)) el.value = cur; }
@@ -958,7 +1026,7 @@ function apply(light){
   score(RAW);
   const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim(),p:$("fPartner").value};
   const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub));
-  grade(pool);
+  grade(pool); volume(pool);
   VIEW = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0)&&(!f.p||(f.p==="Y"?!!r.partner:!r.partner)));
   VIEW.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
@@ -1043,7 +1111,7 @@ function renderPartners(){
   const st = p => { const r = p.match; if(!r) return '<span class="sub">현재 불러온 목록에 없음</span>';
     if(!r.looked) return '<span class="sub">상세정보 미조회</span>';
     const core = r.coreN ? `만성 ${r.coreN}` : "", cond = r.condN ? `조건부 ${r.condN}` : "";
-    return `지수 ${r.score} · 상위 ${r.pct}%${core||cond?` · ${[core,cond].filter(Boolean).join(" · ")}`:""}${evalBadge(r)}`; };
+    return `지수 ${r.score} · 상위 ${r.pct}% · 규모 ${r.vol}(${VT_NAME[r.volT]})${core||cond?` · ${[core,cond].filter(Boolean).join(" · ")}`:""}${evalBadge(r)}`; };
   wrap.innerHTML = list.length ? `<table><thead><tr><th>등급</th><th>거래처명</th><th>시군구</th><th>담당</th><th>현재 평가</th><th>비고</th><th>전화</th><th>주소</th></tr></thead><tbody>${
     list.slice(0, 500).map(p => { const r = p.match;
       return `<tr class="${r ? "" : "out"}"><td class="c-g">${r ? `<span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span>` : '<span class="g gN">·</span>'}</td>
@@ -1101,7 +1169,7 @@ function render(light){
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
   $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
-    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td>${esc(r.name)}${pBadge(r)}</td><td class="c-ev">${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
+    <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td class="n">${volHtml(r)}</td><td>${esc(r.name)}${pBadge(r)}</td><td class="c-ev">${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
     <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
     <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
     <td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
@@ -1132,7 +1200,7 @@ function renderCards(){
       <div class="t2">${esc(r.sggu)} ${esc(r.emd)} · ${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}${r.pct?` · 상위 ${r.pct}%`:""}</div>
       ${r.looked ? `<div class="t3">${hrsHtml(r)}${r.imSdr>=0?`<span class="hb">전문의 ${r.imSdr}명</span>`:""}</div>` : '<div class="t3"><span class="sub">상세정보 미조회</span></div>'}
       ${r.looked && !r.noData ? `<div class="t3">${chips}</div>` : ""}
-      <div class="t4"><span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span>${r.hrs?.wk?`<span>평일 ${esc(r.hrs.wk)}</span>`:""}</div>
+      <div class="t4"><span>규모 ${volHtml(r)}</span><span>개원 ${r.years||"-"}년</span><span>의사 ${r.doctors||"-"}명</span>${r.hrs?.wk?`<span>평일 ${esc(r.hrs.wk)}</span>`:""}</div>
       <div class="act">${tel?`<a href="tel:${tel}">📞 전화</a>`:""}${r.lat&&r.lng?`<button type="button" data-go="${esc(r.ykiho)}">📍 지도</button>`:""}</div>
     </div>`;
   }).join("") + (VIEW.length > CARD_N ? `<button class="btn more-btn" id="moreCards">더 보기 (${(VIEW.length-CARD_N).toLocaleString()}곳 남음)</button>` : "") || '<div class="note">표시할 의원이 없습니다.</div>';
@@ -1225,7 +1293,7 @@ function sample(){
     while(t.size<5) t.add(rnd()<(sub==="일반의"?.2:.55) ? pool[Math.floor(rnd()*4)] : pool[Math.floor(rnd()*pool.length)]);
     out.push({ykiho:`S${ai}${i}`,name:`샘플${sub}의원 ${ai+1}-${String(i+1).padStart(2,"0")}`,sido,sggu,emd:emds[Math.floor(rnd()*emds.length)],addr:`${sido} ${sggu} (샘플)`,tel:"",
       subject:sub,doctors:1+Math.floor(rnd()*3),years:+(rnd()*25).toFixed(1),top5:[...t].join("|"),looked:i%6!==0,sdr:1,
-      hrs:{night:rnd()<.4?Math.ceil(rnd()*5):0,sat:rnd()<.7,sun:rnd()<.15,wk:"09:00~18:30"},im:sub==="일반의"?0:Math.floor(rnd()*3),hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
+      hrs:{night:rnd()<.4?Math.ceil(rnd()*5):0,sat:rnd()<.7,sun:rnd()<.15,wk:"09:00~18:30"},im:sub==="일반의"?0:Math.floor(rnd()*3),ph:Math.floor(rnd()*4),hp_good:rnd()<.4?"Y":"",dm_good:rnd()<.3?"Y":"",lat:la+(rnd()-.5)*.04,lng:ln+(rnd()-.5)*.05});
   }});
   return out.map(r=>r.looked?r:{...r,top5:""});
 }
@@ -1259,7 +1327,7 @@ $("btnCache").onclick = () => { if(confirm("저장된 상세정보(진료시간�
 $("btnSample").onclick = () => { RAW = sample(); if(!PARTNERS.length || P_SRC === "샘플"){ PARTNERS = RAW.filter((r,i) => i % 7 === 1).map((r,i) => ({name:r.name, ykiho:"", code:"", sido:r.sido, sggu:r.sggu, addr:"", owner:["김유한","이버들","박나무"][i%3], platform:"", memo:i%4===0?"월 1회 방문":"", match:null})); PARTNERS.push({name:"샘플타지역내과의원", ykiho:"", code:"", sido:"서울", sggu:"중랑구", addr:"", owner:"김유한", platform:"", memo:"", match:null}); P_SRC = "샘플"; } matchPartners(); $("aSido").value = "110000"; LOADED_SIDO = "110000"; LOADED = new Set(RAW.map(r=>r.sggu)); LOADED_SUBS = curSubs().join(","); $("srcBadge").textContent = "샘플 데이터 (가상 기관)"; $("srcBadge").style.background = "var(--acc)"; resetFilters(); refreshOpts(); apply(); $("btnTop5").disabled = true; say("샘플 미리보기입니다. 실제 데이터는 ①부터 진행하세요."); };
 $("export").onclick = () => {
   RAW.forEach(r => r.partnerY = r.partner ? "거래처" : "");
-  const cols = ["grade","score","pct","name","partnerY","sido","sggu","emd","subject","imSdr","hrsScore","suit","coreN","condN","top5","hdGrd","hp_good","dm_good","copd_good","ast_good","years","doctors","tel","addr"];
+  const cols = ["grade","score","pct","vol","volT","asmN","ph","name","partnerY","sido","sggu","emd","subject","imSdr","hrsScore","suit","coreN","condN","top5","hdGrd","hp_good","dm_good","copd_good","ast_good","years","doctors","tel","addr"];
   const csv = "﻿" + [cols.join(",")].concat(VIEW.map(r=>cols.map(c=>`"${String(c==="grade"&&r.grade==="N"?"미조회":r[c]??"").replace(/"/g,'""')}"`).join(","))).join("\n");
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = "chronic_targets.csv"; a.click();
 };
