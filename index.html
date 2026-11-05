@@ -114,6 +114,15 @@ td.c-ev .em:first-child{margin-left:0}
 .side label{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px}
 select,input[type=text],input[type=number]{width:100%;padding:7px 8px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);font:inherit}
 .chk{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.chk.pri{gap:6px;background:var(--acc-soft);border:1px solid var(--acc);border-radius:8px;padding:7px 8px}
+.chk.pri::before{content:"비대면·만성질환 주력";flex-basis:100%;font-size:11px;font-weight:700;color:var(--acc)}
+.chk.pri label{font-weight:700;color:var(--acc)}
+.chk.etc{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;margin-top:4px}
+.chk.etc label{font-size:12.5px}
+.subetc{margin-top:6px}.subetc summary{font-size:12.5px;font-weight:600}
+.mh2{font-size:12px;margin-top:4px}.mh2 button{background:none;border:0;color:var(--pri);cursor:pointer;font:inherit;padding:0 2px}
+td .subp{color:var(--acc);font-weight:700}
+.loc-btn{width:34px;height:34px;border:2px solid rgba(0,0,0,.2);border-radius:4px;background:#fff;cursor:pointer;font-size:16px;line-height:1;padding:0}
 .chk label{display:flex;gap:4px;align-items:center;margin:0;color:var(--ink)}
 .w{display:grid;grid-template-columns:1fr 44px;align-items:center;gap:6px}
 .w span{text-align:right;font-variant-numeric:tabular-nums}
@@ -129,7 +138,7 @@ input[type=range]{width:100%}
 .msg{font-size:12px;color:var(--sub);margin-top:6px;min-height:18px}
 .msg.err{color:var(--err)}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
-#map{height:min(68vh,640px);min-height:460px;border-radius:10px}
+#map{height:min(80vh,860px);min-height:560px;border-radius:10px}
 .bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
 .bars .t{height:14px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
 .bars .b:hover span:first-child{color:var(--acc)}
@@ -216,7 +225,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   .card{padding:12px}
   .kpis{gap:8px;margin:10px 0}
   .kpi .v{font-size:20px}
-  #map{height:300px;min-height:0}
+  #map{height:58vh;min-height:320px}
   .tbl{display:none}
   .cards{display:block}
   .ptools input[type=text]{width:100%}
@@ -408,11 +417,11 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
       <div class="multi"><div class="mh"><span id="sgguSum">전체</span><span><button type="button" id="sgguAll">모두 선택</button> · <button type="button" id="sgguNone">해제</button></span></div>
         <div class="ml" id="sgguList"></div></div>
       <label>진료과목</label>
-      <div class="chk">
-        <label><input type="checkbox" value="01" checked>내과</label>
-        <label><input type="checkbox" value="23" checked>가정의학과</label>
-        <label><input type="checkbox" value="00" checked>일반의</label>
-      </div>
+      <div class="chk pri" id="subPri"></div>
+      <details class="subetc"><summary>그 밖의 진료과목 <span class="sub" id="subEtcSum"></span></summary>
+        <div class="mh2"><button type="button" id="subEtcAll">모두 선택</button> · <button type="button" id="subEtcNone">해제</button></div>
+        <div class="chk etc" id="subEtc"></div>
+      </details>
       <button class="btn pri full" id="btnBasis">의원 목록 불러오기</button>
 
       <div class="step">② 읍면동으로 좁히기 (선택)</div>
@@ -483,7 +492,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     </aside>
 
     <section class="row" style="align-content:start">
-      <div class="row two" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+      <div class="row two" style="grid-template-columns:minmax(0,3fr) minmax(0,1fr)">
         <div class="card" id="secMap"><div class="sec-title">지도</div><div id="map"></div></div>
         <div class="card"><div class="sec-title">시군구별 의원 수 (등급 구성)</div><div class="bars" id="bars"></div>
           <div class="note"><span class="g gA">A</span> <span class="g gB">B</span> <span class="g gC">C</span> <span class="g gN">미조회</span> · 막대를 누르면 해당 시군구로 필터<br>지도에서 <b style="color:var(--acc)">주황 테두리</b>는 비대면 진료 거래처입니다.</div></div>
@@ -538,7 +547,8 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
 <script>
 /* ───────── 기본 설정 ───────── */
 const SIDO = [["110000","서울"],["210000","부산"],["220000","인천"],["230000","대구"],["250000","대전"],["260000","울산"],["410000","세종"],["310000","경기"],["320000","강원"],["330000","충북"],["340000","충남"],["350000","전북"],["360000","전남광주"],["370000","경북"],["380000","경남"],["390000","제주"]];
-const SUBNAME = {"01":"내과","23":"가정의학과","00":"일반의"};
+const SUBNAME = {"01":"내과","23":"가정의학과","00":"일반의","02":"신경과","03":"정신건강의학과","04":"외과","05":"정형외과","06":"신경외과","07":"심장혈관흉부외과","08":"성형외과","09":"마취통증의학과","10":"산부인과","11":"소아청소년과","12":"안과","13":"이비인후과","14":"피부과","15":"비뇨의학과","16":"영상의학과","21":"재활의학과","24":"응급의학과","25":"직업환경의학과","26":"예방의학과"};
+const PRIOR = ["01","23","00"];   // 비대면 진료·만성질환 평가가 주로 이뤄지는 과목
 /* 자료 출처 — 평가 차수는 심평원이 새 결과를 공개하면 여기만 고치면 됩니다 */
 const EVAL_INFO = {
   hd:   "고혈압·당뇨병 적정성평가 · 2024년(2주기 2차) 평가, 2025년 12월 공개",
@@ -653,12 +663,14 @@ async function loadBasis(){
     for(const [ji,{code,name,sub}] of jobs.entries()){
       const key = `${sido}|${code||"*"}|${sub}`;
       if(!BCACHE[key]){
-        const items = []; let page = 1, total = 1;
-        while(items.length < total){
+        const items = []; let page = 1, total = 1, fetched = 0;
+        while(fetched < total){
           say(`${name || SIDO.find(s=>s[0]===sido)[1]+" 전체"} · ${SUBNAME[sub]} 불러오는 중… (${ji+1}/${jobs.length})`);
-          const q = {svc:"basis", sidoCd:sido, clCd:"31", dgsbjtCd:sub, numOfRows:500, pageNo:page}; if(code) q.sgguCd = code;
+          // 일반의: 진료과목 코드(00)로는 조회되지 않아, 의원 전체를 받은 뒤 이름에 과목이 없는 곳만 남김
+          const q = {svc:"basis", sidoCd:sido, clCd:"31", numOfRows:500, pageNo:page}; if(sub !== "00") q.dgsbjtCd = sub; if(code) q.sgguCd = code;
           const j = await api(q);
-          total = j.totalCount; items.push(...j.items);
+          total = j.totalCount; items.push(...(sub === "00" ? j.items.filter(it => !guessSubject(it.yadmNm||"", "__")) : j.items));
+          fetched += j.items.length;
           if(!j.items.length) break;
           page++;
         }
@@ -696,7 +708,7 @@ function toRow(it, sub){
 function guessSubject(name, sub){
   if(/내과/.test(name)) return "내과";
   if(/가정의학/.test(name)) return "가정의학과";
-  const m = name.match(/(소아청소년과|이비인후과|정형외과|신경과|비뇨의학과|비뇨기과|피부과|안과|산부인과|재활의학과|외과|정신건강의학과|마취통증의학과|영상의학과)/);
+  const m = name.match(/(소아청소년과|소아과|이비인후과|정형외과|신경외과|흉부외과|성형외과|신경과|비뇨의학과|비뇨기과|피부과|안과|산부인과|재활의학과|정신건강의학과|마취통증의학과|영상의학과|외과)/);
   if(m) return m[1];
   return SUBNAME[sub] || "";
 }
@@ -1170,7 +1182,7 @@ function render(light){
   $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
     <td><span class="g g${r.grade}">${r.grade==="N"?"-":r.grade}</span></td><td class="n">${r.looked?r.score:""}</td><td class="pct">${r.pct?`상위 ${r.pct}%`:""}</td><td class="n">${volHtml(r)}</td><td>${esc(r.name)}${pBadge(r)}</td><td class="c-ev">${evalBadge(r)}</td><td>${esc(r.sggu)}</td><td>${esc(r.emd)}</td>
-    <td>${esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
+    <td>${/^(내과|가정의학과|일반의)$/.test(r.subject)?`<span class="subp">${esc(r.subject)}</span>`:esc(r.subject)}${r.subjEst?'<span class="est">추정</span>':""}</td><td>${r.looked?sdrTxt(r):""}</td><td>${r.looked?hrsHtml(r):'<span class="sub">미조회</span>'}</td><td class="c-t5">${suitTxt(r)}</td>
     <td class="c-t5">${r.noData?'<span class="sub">-</span>':chipHtml(r, $("oOnly").checked)}</td>
     <td class="n">${r.years??""}</td><td class="n">${r.doctors||""}</td><td>${esc(r.tel)}</td><td>${esc(r.addr)}</td></tr>`).join("");
   const L3 = VIEW.filter(r => r.looked), hasT5 = L3.some(r => !r.noData);
@@ -1258,6 +1270,23 @@ function initMap(){
   addBaseCtl();
   map.on("baselayerchange", e => { curBase = e.name; });
   setBase(defaultBase());
+  map.setView(HERE || [36.5,127.8], HERE ? 14 : 7);
+  if(!HERE) locate();
+  L.Control.Locate = L.Control.extend({ onAdd(){ const b = L.DomUtil.create("button","loc-btn"); b.type = "button"; b.title = "내 위치로"; b.innerHTML = "📍";
+    L.DomEvent.on(b, "click", e => { L.DomEvent.stop(e); locate(true); }); return b; } });
+  new L.Control.Locate({position:"topleft"}).addTo(map);
+}
+// 현재 위치(GPS): 처음 화면을 내 주변으로. 거부·실패하면 전국 지도 유지
+let HERE = null, hereMark = null;
+function locate(force){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p => {
+    HERE = [p.coords.latitude, p.coords.longitude];
+    if(!map) return;
+    if(hereMark) hereMark.remove();
+    hereMark = L.circleMarker(HERE, {radius:8, color:"#fff", weight:3, fillColor:"#2f6fd1", fillOpacity:1}).bindTooltip("현재 위치").addTo(map);
+    if(force || !VIEW.length) map.setView(HERE, 14);
+  }, () => { if(force) say("현재 위치를 가져오지 못했습니다. 브라우저의 위치 권한을 확인하세요.", true); }, {enableHighAccuracy:false, timeout:8000, maximumAge:600000});
 }
 async function resetMapBase(){
   await loadVkey();
@@ -1278,7 +1307,7 @@ function drawMap(){
   MARK = {};
   layer = L.layerGroup(pts.map(r=>MARK[r.ykiho]=L.circleMarker([r.lat,r.lng],r.partner?{radius:r.grade==="A"?9:7,color:cs.getPropertyValue("--acc"),fillColor:col[r.grade],fillOpacity:.9,weight:3}:{radius:r.grade==="A"?7:5,color:col[r.grade],fillColor:col[r.grade],fillOpacity:r.grade==="N"?.35:.8,weight:1})
     .bindPopup(`<b>${esc(r.name)}</b>${pBadge(r)}${evalBadge(r)}${r.partner?.owner?`<br>담당 ${esc(r.partner.owner)}`:""}<br>${r.grade==="N"?"상세정보 미조회":`${r.grade}등급 · 지수 ${r.score} · 상위 ${r.pct}%`}<br>${esc(r.subject)}${r.hrs?` · ${r.hrs.night?"야간 ":""}${r.hrs.sat?"토 ":""}${r.hrs.sun?"일 ":""}진료`:""}<br>${esc(r.tel)}`))).addTo(map);
-  if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView([36.5,127.8],7);
+  if(pts.length) map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])),{padding:[20,20],maxZoom:14}); else map.setView(HERE || [36.5,127.8], HERE ? 14 : 7);
 }
 function say(t, err){ $("msg").textContent = t; $("msg").className = "msg" + (err?" err":""); }
 function setProg(p){ $("prog").style.width = Math.min(100,p) + "%"; }
@@ -1302,7 +1331,14 @@ function sample(){
 $("aSido").innerHTML = SIDO.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
 $("aSido").value = store.get("chronic_sido","110000");
 $("aSido").onchange = () => { store.set("chronic_sido", $("aSido").value); SEL.clear(); $("fEmd").value = ""; renderSggu(); sgguChanged(); };
-document.querySelectorAll(".chk input").forEach(cb => cb.addEventListener("change", markNeed));
+const SUB_SAVED = store.get("chronic_subs", PRIOR);
+$("subPri").innerHTML = PRIOR.map(c => `<label><input type="checkbox" value="${c}" ${SUB_SAVED.includes(c)?"checked":""}>${SUBNAME[c]}</label>`).join("");
+$("subEtc").innerHTML = Object.keys(SUBNAME).filter(c => !PRIOR.includes(c)).sort((a,b)=>SUBNAME[a].localeCompare(SUBNAME[b],"ko")).map(c => `<label><input type="checkbox" value="${c}" ${SUB_SAVED.includes(c)?"checked":""}>${SUBNAME[c]}</label>`).join("");
+function subChanged(){ const s = curSubs(); store.set("chronic_subs", s); const n = s.filter(c => !PRIOR.includes(c)).length; $("subEtcSum").textContent = n ? `(${n}개 선택)` : ""; markNeed(); }
+document.querySelectorAll(".chk input").forEach(cb => cb.addEventListener("change", subChanged));
+$("subEtcAll").onclick = () => { $("subEtc").querySelectorAll("input").forEach(i => i.checked = true); subChanged(); };
+$("subEtcNone").onclick = () => { $("subEtc").querySelectorAll("input").forEach(i => i.checked = false); subChanged(); };
+subChanged();
 $("apiBase").value = store.get("chronic_api","");
 $("apiBase").onchange = () => store.set("chronic_api", $("apiBase").value.trim());
 $("vkey").value = store.get("chronic_vkey", "");
