@@ -139,6 +139,19 @@ input[type=range]{width:100%}
 .msg.err{color:var(--err)}
 hr{border:0;border-top:1px solid var(--line);margin:14px 0}
 #map{height:min(80vh,860px);min-height:560px;border-radius:10px}
+.rtabs{display:none;gap:6px;overflow-x:auto;padding:2px 0 2px;scrollbar-width:thin}
+.rtabs.on{display:flex}
+.rtab{border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:18px;padding:6px 12px;font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;flex:none}
+.rtab small{font-weight:500;color:var(--sub);margin-left:4px}
+.rtab.on{background:var(--pri);color:#fff;border-color:var(--pri)}.rtab.on small{color:#fff;opacity:.85}
+.rtab.all{border-style:dashed}
+.focusnote{display:none;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;margin:0 0 8px;padding:6px 10px;border-radius:8px;background:var(--soft);border:1px solid var(--line2)}
+.focusnote.on{display:block;line-height:1.7}.focusnote b{color:var(--pri)}
+.focusnote button{background:none;border:0;color:var(--acc);font-weight:700;cursor:pointer;font:inherit;padding:0;margin-left:6px;white-space:nowrap}
+.q2{background:none;border:1px solid var(--acc);color:var(--acc);border-radius:14px;font-size:12px;font-weight:700;padding:2px 10px;cursor:pointer}
+.bars .b.on span:first-child{color:var(--acc);font-weight:700}
+.bars .b.on{background:var(--acc-soft);border-radius:6px}
+.bars .b.dim{opacity:.45}
 .bars .b{display:grid;grid-template-columns:110px 1fr 90px;gap:8px;align-items:center;margin:4px 0;font-size:12px;cursor:pointer}
 .bars .t{height:14px;background:var(--soft);border-radius:4px;overflow:hidden;display:flex}
 .bars .b:hover span:first-child{color:var(--acc)}
@@ -246,6 +259,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
   .multi .ml label{padding:6px 2px;font-size:14px}
   .side label.opt,.side .tele label{font-size:14px}
   .bars .b{grid-template-columns:80px 1fr 78px}
+  .rtabs.on{position:sticky;top:0;z-index:1500;background:var(--bg);margin:0 -12px;padding:8px 12px;border-bottom:1px solid var(--line2)}
   .modal{padding:0}
   .mbox{border-radius:0;min-height:100vh;max-width:none;padding:16px 16px 80px}
   .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:1600;background:var(--card);border-top:1px solid var(--line2);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
@@ -492,9 +506,10 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
     </aside>
 
     <section class="row" style="align-content:start">
+      <div class="rtabs" id="rTabs" role="tablist" aria-label="시군구 보기"></div>
       <div class="row two" style="grid-template-columns:minmax(0,3fr) minmax(0,1fr)">
         <div class="card" id="secMap"><div class="sec-title">지도</div><div id="map"></div></div>
-        <div class="card"><div class="sec-title">시군구별 의원 수 (등급 구성)</div><div class="bars" id="bars"></div>
+        <div class="card"><div class="sec-title listhd"><span>시군구별 의원 수 (등급 구성)</span><button type="button" class="q2" id="barsBack" style="display:none"></button></div><div class="bars" id="bars"></div>
           <div class="note"><span class="g gA">A</span> <span class="g gB">B</span> <span class="g gC">C</span> <span class="g gN">미조회</span> · 막대를 누르면 해당 시군구로 필터<br>지도에서 <b style="color:var(--acc)">주황 테두리</b>는 비대면 진료 거래처입니다.</div></div>
       </div>
       <div class="card" id="secPartner">
@@ -518,6 +533,7 @@ details summary{cursor:pointer;font-weight:700;font-size:13px}
           <span>· 마크 옆 <b>1등급·2등급</b>(5단계 중) 또는 <b>양호</b>만 표시 · 심평원 적정성평가는 고혈압과 당뇨병을 한 등급으로 매깁니다</span>
           <span><span class="pb" style="margin:0">🤝 거래처</span> 비대면 진료 거래처</span>
         </div>
+        <div class="focusnote" id="focusNote"></div>
         <div class="evalstat" id="dataWarn" style="display:none;border-left:4px solid var(--acc);margin-bottom:8px"></div>
         <div class="tbl"><table id="tbl"><thead><tr>
           <th data-k="grade">등급</th><th data-k="score">지수</th><th data-k="pct">순위</th><th data-k="vol" title="진료 규모 추정 지수">규모</th><th data-k="name">기관명</th><th data-k="good" class="c-ev">평가</th><th data-k="sggu">시군구</th><th data-k="emd">읍면동</th>
@@ -632,7 +648,7 @@ const store = {
   get(k,d){ try{ const v = localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
   set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
-let RAW = [], VIEW = [], sortK = "score", sortDir = -1, map, layer, stopFlag = false;
+let RAW = [], VIEW = [], VIEW0 = [], FOCUS = "", sortK = "score", sortDir = -1, map, layer, stopFlag = false;
 let T5 = store.get("chronic_t5v2", {});   // ykiho → {d:[질병], s:표시과목}
 try{ ["chronic_t5","chronic_det"].forEach(k => localStorage.removeItem(k)); }catch(e){}
 let DET = store.get("chronic_det2", {});  // ykiho → {h:{night,sat,sun}|null, im:내과·가정 전문의 수|null}
@@ -1025,23 +1041,30 @@ function sgguSummary(){
 }
 function sgguChanged(){ sgguSummary(); refreshEmd(); apply(); }
 function refreshEmd(){
-  const el = $("fEmd");
-  if(SEL.size === 1){ el.disabled = false; opts(el, uniq(RAW.filter(r => SEL.has(r.sggu)).map(r => r.emd))); }
-  else { el.disabled = true; el.innerHTML = `<option value="">${SEL.size ? "시군구 1곳 선택 시 사용" : "전체"}</option>`; }
+  const el = $("fEmd"), one = FOCUS || (SEL.size === 1 ? [...SEL][0] : "");
+  if(one){ el.disabled = false; opts(el, uniq(RAW.filter(r => r.sggu === one).map(r => r.emd))); }
+  else { el.disabled = true; el.innerHTML = `<option value="">${SEL.size ? "시군구 1곳을 고르면 사용 (위 탭·오른쪽 막대)" : "전체"}</option>`; }
+}
+// 시군구 한 곳만 들여다보기 (불러온 선택은 그대로 두고 화면만 좁힘)
+function setFocus(k){
+  FOCUS = k || ""; $("fEmd").value = ""; refreshEmd(); apply();
+  if(isMobile() && $("rTabs").classList.contains("on")) $("rTabs").scrollIntoView({block:"start"});
 }
 function refreshOpts(){
   renderSggu(); refreshEmd();
   opts($("fSub"), uniq(RAW.map(r=>r.subject)));
 }
-function resetFilters(){ SEL.clear(); ["fEmd","fSub","fGrade","fPartner"].forEach(id=>$(id).value=""); $("fQ").value=""; }
+function resetFilters(){ SEL.clear(); FOCUS = ""; ["fEmd","fSub","fGrade","fPartner"].forEach(id=>$(id).value=""); $("fQ").value=""; }
 function apply(light){
   score(RAW);
   const f = {emd:$("fEmd").value,sub:$("fSub").value,g:$("fGrade").value,q:$("fQ").value.trim(),p:$("fPartner").value};
-  const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.emd||r.emd===f.emd)&&(!f.sub||r.subject===f.sub));
-  grade(pool); volume(pool);
-  VIEW = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0)&&(!f.p||(f.p==="Y"?!!r.partner:!r.partner)));
-  VIEW.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
+  if(FOCUS && !RAW.some(r => r.sggu === FOCUS && (!SEL.size || SEL.has(r.sggu)))) FOCUS = "";
+  const pool = RAW.filter(r=>(!SEL.size||SEL.has(r.sggu))&&(!f.sub||r.subject===f.sub));
+  grade(pool); volume(pool);   // 등급·규모는 선택한 시군구 전체 기준 (한 곳을 골라 봐도 등급이 바뀌지 않음)
+  VIEW0 = pool.filter(r=>(!f.g||r.grade===f.g)&&(!f.q||r.name.includes(f.q))&&(!$("oHide").checked||!r.looked||r.noData||r.chronicN>0)&&(!$("oGood").checked||r.good>0)&&(!f.p||(f.p==="Y"?!!r.partner:!r.partner)));
+  VIEW0.sort((a,b)=>{ if(a.looked!==b.looked) return a.looked?-1:1; const x=a[sortK],y=b[sortK];
     return (typeof x==="number"&&typeof y==="number" ? x-y : String(x??"").localeCompare(String(y??""),"ko"))*sortDir; });
+  VIEW = FOCUS || f.emd ? VIEW0.filter(r => (!FOCUS || r.sggu === FOCUS) && (!f.emd || r.emd === f.emd)) : VIEW0;
   render(light);
 }
 
@@ -1093,7 +1116,8 @@ function matchPartners(){
   });
 }
 function partnerInArea(p){
-  if(p.match) return (!SEL.size || SEL.has(p.match.sggu));
+  if(p.match) return (!SEL.size || SEL.has(p.match.sggu)) && (!FOCUS || p.match.sggu === FOCUS);
+  if(FOCUS) return (p.sggu + p.addr).replace(/\s/g,"").includes(FOCUS.replace(/\s/g,""));
   if(!RAW.length) return false;
   const txt = (p.sido + p.sggu + p.addr).replace(/\s/g,"");
   if(SEL.size) return [...SEL].some(s => txt.includes(s.replace(/\s/g,"")));
@@ -1113,7 +1137,7 @@ function renderPartners(){
   const gr = p => p.match ? (p.match.grade === "N" ? 3 : "ABC".indexOf(p.match.grade)) : 4;
   list.sort((a,b) => gr(a) - gr(b) || (b.match?.score||0) - (a.match?.score||0) || a.name.localeCompare(b.name, "ko"));
   const inA = PARTNERS.filter(partnerInArea), m = inA.filter(p => p.match), cnt = k => m.filter(p => p.match.grade === k).length;
-  const pool = RAW.filter(r => (!SEL.size || SEL.has(r.sggu)));
+  const pool = RAW.filter(r => (!SEL.size || SEL.has(r.sggu)) && (!FOCUS || r.sggu === FOCUS));
   const newA = pool.filter(r => r.grade === "A" && !r.partner).length;
   $("pCnt").textContent = `(전체 ${PARTNERS.length.toLocaleString()}곳${P_SRC ? " · " + P_SRC : ""})`;
   $("pStat").innerHTML = RAW.length ? `<span>현재 지역 거래처 <b>${inA.length}</b>곳</span><span>목록 연결 <b>${m.length}</b>곳</span>`
@@ -1170,14 +1194,23 @@ function render(light){
   $("kN").textContent = `${L2.length.toLocaleString()} / ${VIEW.length.toLocaleString()}`;
   $("kA").textContent = L2.length ? a.toLocaleString() : "-";
   $("kAvg").textContent = L2.length ? Math.round(L2.reduce((s,r)=>s+r.score,0)/L2.length) : "-";
-  const by = {}; VIEW.forEach(r=>{ const k=r.sggu||"(미상)"; (by[k]=by[k]||{A:0,B:0,C:0,N:0,n:0})[r.grade]++; by[k].n++; });
+  const by = {}; VIEW0.forEach(r=>{ const k=r.sggu||"(미상)"; (by[k]=by[k]||{A:0,B:0,C:0,N:0,n:0})[r.grade]++; by[k].n++; });
   const ent = Object.entries(by).sort((x,y)=>y[1].A-x[1].A||y[1].n-x[1].n);
   $("kTop").textContent = ent.length&&ent[0][1].A ? `${ent[0][0]} (${ent[0][1].A})` : "-";
   const mx = Math.max(1,...ent.map(e=>e[1].n));
-  $("bars").innerHTML = ent.slice(0,15).map(([k,v])=>`<div class="b" data-s="${esc(k)}"><span>${esc(k)}</span><div class="t">
+  $("bars").innerHTML = ent.slice(0,15).map(([k,v])=>`<div class="b${FOCUS===k?" on":FOCUS?" dim":""}" data-s="${esc(k)}" title="${FOCUS===k?"다시 누르면 전체로":"이 시군구만 보기"}"><span>${esc(k)}</span><div class="t">
     <i style="width:${v.A/mx*100}%;background:var(--a)"></i><i style="width:${v.B/mx*100}%;background:var(--b)"></i><i style="width:${v.C/mx*100}%;background:var(--c)"></i><i style="width:${v.N/mx*100}%;background:var(--line)"></i></div>
     <span class="sub">${v.n}곳 · A ${v.A}</span></div>`).join("") || `<div class="sub">데이터 없음</div>`;
-  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>{ SEL = new Set([el.dataset.s]); $("fEmd").value=""; renderSggu(); sgguChanged(); });
+  document.querySelectorAll("#bars .b").forEach(el=>el.onclick=()=>setFocus(FOCUS===el.dataset.s ? "" : el.dataset.s));
+  const multi = ent.length >= 2 || !!FOCUS, tot = VIEW0.length;
+  $("rTabs").classList.toggle("on", multi);
+  $("rTabs").innerHTML = multi ? `<button type="button" class="rtab all${FOCUS?"":" on"}" data-f="">전체 ${ent.length}곳<small>${tot.toLocaleString()}</small></button>`
+    + ent.map(([k,v]) => `<button type="button" class="rtab${FOCUS===k?" on":""}" data-f="${esc(k)}">${esc(k)}<small>${v.n} · A ${v.A}</small></button>`).join("") : "";
+  $("rTabs").querySelectorAll("[data-f]").forEach(b => b.onclick = () => setFocus(b.dataset.f));
+  const back = $("barsBack"); back.style.display = FOCUS ? "" : "none"; back.textContent = `← 전체 ${ent.length}곳`; back.onclick = () => setFocus("");
+  const fn = $("focusNote"); fn.classList.toggle("on", !!FOCUS);
+  fn.innerHTML = FOCUS ? `📍 <b>${esc(FOCUS)}</b>만 보는 중 (${VIEW.length.toLocaleString()}곳) · 등급은 선택한 ${ent.length}개 시군구 전체 기준 <button type="button" id="fnBack">← 전체 ${ent.length}곳 다시 보기</button>` : "";
+  if(FOCUS) $("fnBack").onclick = () => setFocus("");
   $("cnt").textContent = `(${VIEW.length.toLocaleString()}곳${VIEW.length>1000?", 상위 1,000곳 표시":""})`;
   $("btnTop5").textContent = `현재 목록 상세정보 조회 (미조회 ${VIEW.filter(r=>!r.looked).length.toLocaleString()}곳)`;
   document.querySelector("#tbl tbody").innerHTML = VIEW.slice(0,1000).map(r=>`<tr>
